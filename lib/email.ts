@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import nodemailer, { type Transporter } from "nodemailer";
+import { eligibilityThreshold } from "@/lib/config";
 
 // ---- Provider selection ----
 // SMTP (e.g. a Gmail account + App Password, ~500 emails/day) when SMTP_HOST is
@@ -149,7 +150,7 @@ function notEligibleTemplate({ name, attendancePct }: StudentEmailData) {
     <h2 style="color:#b45309">Thank you for joining us, ${escapeHtml(name)}</h2>
     <p>We appreciate you being part of our 2-day workshop event.</p>
     <p>Our records show you attended <strong>${attendancePct}%</strong> of the sessions.
-       Unfortunately this is below the ${process.env.ELIGIBILITY_THRESHOLD ?? 70}% threshold
+       Unfortunately this is below the ${eligibilityThreshold()}% threshold
        required for a certificate of completion.</p>
     <p>If you believe this is an error, please reply to this email and we'll review your attendance.</p>
     <p style="margin-top:24px">Warm regards,<br/>The Event Team</p>

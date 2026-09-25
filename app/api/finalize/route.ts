@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guard";
 import { emailConfigError, sendResultEmail } from "@/lib/email";
 import { attendedSlotCounts } from "@/lib/attendance";
+import { eligibilityThreshold } from "@/lib/config";
 import { batchProgress, readSkipIds, runEmailBatch } from "@/lib/email-batch";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (configError) return NextResponse.json({ error: configError }, { status: 400 });
 
   const skipIds = await readSkipIds(req);
-  const threshold = Number(process.env.ELIGIBILITY_THRESHOLD ?? 70);
+  const threshold = eligibilityThreshold();
 
   // total time slots in the event = denominator (track can differ per slot).
   const totalSlots = await prisma.timeSlot.count();

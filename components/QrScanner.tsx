@@ -191,10 +191,11 @@ export default function QrScanner({ onScan, paused }: Props) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (manual.trim()) {
-            onScan(manual.trim());
-            setManual("");
-          }
+          // During the post-scan cooldown the parent ignores scans, so keep
+          // the typed token instead of clearing it into the void.
+          if (paused || !manual.trim()) return;
+          onScan(manual.trim());
+          setManual("");
         }}
         className="flex gap-2"
       >
@@ -209,7 +210,9 @@ export default function QrScanner({ onScan, paused }: Props) {
           spellCheck={false}
           enterKeyHint="go"
         />
-        <button className="btn-secondary shrink-0">Submit</button>
+        <button className="btn-secondary shrink-0" disabled={paused}>
+          {paused ? "Wait…" : "Submit"}
+        </button>
       </form>
     </div>
   );

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StudentOverride, { SlotRow } from "@/components/StudentOverride";
 import ResendQrButton from "@/components/ResendQrButton";
+import { eligibilityThreshold } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
             value={student.hotelCheckIn ? "In" : "Out"}
             sub={student.hotelCheckIn ? student.hotelCheckIn.checkedInAt.toLocaleString() : "not arrived"}
           />
-          <Metric label="Eligible" value={pct >= Number(process.env.ELIGIBILITY_THRESHOLD ?? 70) ? "Yes" : "No"} />
+          <Metric label="Eligible" value={pct >= eligibilityThreshold() ? "Yes" : "No"} />
         </div>
       </div>
 
