@@ -30,50 +30,49 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="eyebrow">ATIC 2.0 · Live dashboard</p>
-        <h1 className="mt-1 text-3xl sm:text-4xl">
-          Event <span className="text-accent">Overview</span>
+        <div className="flex flex-wrap justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-mist">
+          <span>[ ATIC 2.0 ]</span>
+          <span>Live dashboard</span>
+        </div>
+        <h1 className="mt-2 text-4xl sm:text-6xl">
+          Event <span className="pill-word">Live</span>
         </h1>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        <Card label="Imported" value={totalStudents} />
-        <Card label="Hotel Checked-In" value={hotelCheckedIn} tone="text-emerald-400" />
-        <Card label="Not Arrived" value={totalStudents - hotelCheckedIn} tone="text-amber-300" />
-        <Card label="Time Slots" value={totalSlots} />
+        {/* Colour blocks, like the mockup's ticket cards. */}
+        <Card n="01" label="Imported" value={totalStudents} tone="bg-white text-navy-950" />
+        <Card n="02" label="Hotel checked-in" value={hotelCheckedIn} tone="bg-accent text-navy-950" />
+        <Card n="03" label="Not arrived" value={totalStudents - hotelCheckedIn} tone="border border-white/15 bg-navy-950 text-white" />
+        <Card n="04" label="Time slots" value={totalSlots} tone="bg-brand text-white" />
       </div>
 
       {totalStudents > 0 && (
         <div className="card">
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="eyebrow">Arrivals</h2>
-            <span className="text-sm text-slate-300">
-              <b className="text-white">{Math.round((hotelCheckedIn / totalStudents) * 100)}%</b> checked in
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="eyebrow">(01) Arrivals</h2>
+            <span className="font-display text-2xl font-black text-white">
+              {Math.round((hotelCheckedIn / totalStudents) * 100)}%
             </span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-brand to-accent shadow-glow transition-all"
-              style={{ width: `${(hotelCheckedIn / totalStudents) * 100}%` }}
-            />
+          <div className="h-3 overflow-hidden rounded-sm bg-white/10">
+            <div className="h-full bg-accent transition-all" style={{ width: `${(hotelCheckedIn / totalStudents) * 100}%` }} />
           </div>
         </div>
       )}
 
       <div className="card">
-        <h2 className="mb-3 eyebrow">
-          Live Track Occupancy (current time slot)
-        </h2>
+        <h2 className="eyebrow mb-3">(02) Live track occupancy</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {tracks.map((t) => (
             <Link
               key={t.id}
               href={`/scan/${t.id}`}
-              className="group rounded-xl border border-white/10 bg-white/5 p-4 transition hover:border-accent/60 hover:bg-accent/10"
+              className="group rounded-lg border border-white/15 bg-navy-950 p-4 transition hover:-translate-y-0.5 hover:border-white hover:shadow-block"
             >
               <div className="font-display text-3xl font-black text-white">{t._count.currentStudents}</div>
-              <div className="text-sm font-semibold text-slate-200">{t.name}</div>
-              <div className="mt-1 text-xs text-accent transition group-hover:translate-x-0.5">Open scanner →</div>
+              <div className="font-display text-sm font-bold uppercase text-white">{t.name}</div>
+              <div className="mt-2 font-mono text-[11px] uppercase tracking-wider text-accent">Open scanner ↗</div>
             </Link>
           ))}
         </div>
@@ -82,10 +81,10 @@ export default async function DashboardPage() {
       <FinalizeButton />
 
       <div className="card">
-        <h2 className="mb-3 eyebrow">Students</h2>
-        <div className="max-h-[28rem] overflow-auto rounded-xl border border-white/10">
+        <h2 className="eyebrow mb-3">(03) Students</h2>
+        <div className="max-h-[28rem] overflow-auto rounded-lg border border-white/10">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
+            <thead className="sticky top-0 bg-navy-900 text-left font-mono text-[11px] uppercase tracking-wider text-mist">
               <tr>
                 <th className="hidden px-3 py-2 sm:table-cell">Student ID</th>
                 <th className="px-3 py-2">Name</th>
@@ -142,11 +141,14 @@ export default async function DashboardPage() {
   );
 }
 
-function Card({ label, value, tone = "text-white" }: { label: string; value: number; tone?: string }) {
+function Card({ n, label, value, tone }: { n: string; label: string; value: number; tone: string }) {
   return (
-    <div className="card">
-      <div className={`font-display text-3xl font-black sm:text-4xl ${tone}`}>{value}</div>
-      <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</div>
+    <div className={`rounded-lg p-4 sm:p-5 ${tone}`}>
+      <div className="font-mono text-[11px] font-semibold opacity-70">/{n}</div>
+      <div className="mt-2 font-display text-4xl font-black leading-none sm:text-5xl">{value}</div>
+      <div className="mt-2 border-t border-dashed border-current pt-2 font-mono text-[11px] font-semibold uppercase tracking-wider opacity-80">
+        {label}
+      </div>
     </div>
   );
 }

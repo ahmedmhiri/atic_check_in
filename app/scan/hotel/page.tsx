@@ -93,7 +93,7 @@ export default function HotelScanPage() {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-xl bg-white/5 p-3">
+    <div className="rounded-lg bg-white/5 p-3">
       <div className={`text-2xl font-bold ${tone}`}>{value}</div>
       <div className="text-xs text-slate-400">{label}</div>
     </div>

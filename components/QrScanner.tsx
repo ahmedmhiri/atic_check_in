@@ -185,7 +185,7 @@ export default function QrScanner({ onScan, paused }: Props) {
     <div className="space-y-3">
       <div
         id={REGION_ID}
-        className="min-h-[12rem] w-full overflow-hidden rounded-2xl border border-accent/25 bg-black shadow-glass"
+        className="min-h-[12rem] w-full overflow-hidden rounded-lg border-2 border-white/80 bg-black shadow-block"
       />
       {error && <p className="rounded-md bg-amber-400/10 p-3 text-sm text-amber-200">{error}</p>}
       <form

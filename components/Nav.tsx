@@ -22,33 +22,38 @@ export default function Nav() {
   if (pathname === "/login") return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-accent/15 bg-navy-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/80 backdrop-blur-xl">
       {/* Phones: brand + sign-out on the first row, links full-width below. */}
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2 sm:px-4 sm:py-3">
-        <Link href="/" className="flex items-center gap-2.5" aria-label="ATIC Check-In home">
-          <Image src="/atic-logo.png" alt="ATIC" width={68} height={34} priority className="h-8 w-auto" />
-          <span className="hidden border-l border-white/15 pl-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:inline">
-            Check-In
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-1 px-3 py-2.5 sm:px-4 sm:py-3">
+        <Link href="/" className="flex items-center gap-3" aria-label="ATIC Check-In home">
+          {/* Black logo on a white block, exactly like the mockup header. */}
+          <span className="rounded-[10px] bg-white px-2.5 py-1">
+            <Image src="/atic-logo-black.png" alt="ATIC" width={659} height={331} priority className="h-7 w-auto" />
+          </span>
+          <span className="hidden font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mist sm:inline">
+            [ Check-In ]
           </span>
         </Link>
-        <nav className="order-last flex w-full gap-1 sm:order-none sm:w-auto">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`flex-1 rounded-full px-4 py-2 text-center text-sm transition sm:flex-none sm:py-1.5 ${
-                isActive(pathname, l.href)
-                  ? "bg-white/10 font-semibold text-white"
-                  : "text-accent hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
+        <nav className="order-last flex w-full sm:order-none sm:w-auto sm:gap-6">
+          {links.map((l) => {
+            const active = isActive(pathname, l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`relative flex-1 py-2.5 text-center font-mono text-[13px] font-medium uppercase tracking-[0.06em] transition sm:flex-none sm:py-1 ${
+                  active ? "text-accent" : "text-mist hover:text-white"
+                }`}
+              >
+                {l.label}
+                {active && <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded bg-accent sm:inset-x-0 sm:-bottom-1.5" />}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="ml-auto flex items-center gap-3 text-sm text-slate-400">
-          {session?.user?.email && <span className="hidden text-slate-400 md:inline">{session.user.email}</span>}
-          <button onClick={() => signOut({ callbackUrl: "/login" })} className="btn-secondary">
+        <div className="ml-auto flex items-center gap-3 text-sm">
+          {session?.user?.email && <span className="hidden font-mono text-xs text-slate-500 md:inline">{session.user.email}</span>}
+          <button onClick={() => signOut({ callbackUrl: "/login" })} className="btn-secondary !min-h-0 px-3.5 py-1.5 text-xs">
             Sign out
           </button>
         </div>

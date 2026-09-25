@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ATIC theme — always dark. `color-scheme: dark` makes native controls
-   (select menus, file picker button, checkboxes) render dark too. */
+/* ATIC 2.0 theme (website mockup v3). `color-scheme: dark` makes native
+   controls (select menus, file picker button, checkboxes) render dark too. */
 :root {
   color-scheme: dark;
 }
@@ -12,18 +12,18 @@ html {
   /* Stop iOS inflating text in landscape. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  background: #00083b;
+  background: #0b0b12;
 }
 
 body {
   @apply min-h-screen font-sans text-slate-100 antialiased;
   -webkit-tap-highlight-color: transparent;
-  /* Navy base with the soft blue glows of the ATIC site. */
+  /* Ink base, faint 64px grid and the indigo glow of the mockup's hero. */
   background:
-    radial-gradient(60rem 40rem at -10% -10%, rgba(29, 86, 255, 0.28), transparent 60%),
-    radial-gradient(40rem 30rem at 110% 0%, rgba(56, 182, 255, 0.14), transparent 60%),
-    radial-gradient(50rem 40rem at 50% 120%, rgba(29, 86, 255, 0.16), transparent 60%),
-    #000940;
+    radial-gradient(48rem 36rem at 85% -10%, rgba(42, 47, 224, 0.38), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 64px 64px,
+    #0b0b12;
   background-attachment: fixed;
 }
 
@@ -37,56 +37,62 @@ textarea {
   touch-action: manipulation;
 }
 
+/* Unbounded, heavy, uppercase — "AFRICA IS CODING ITS OWN A.I." */
 h1 {
-  @apply font-display font-black tracking-tight text-white;
+  @apply font-display font-black uppercase leading-[0.95] tracking-tight text-white;
 }
 
 ::selection {
-  background: rgba(56, 182, 255, 0.35);
+  background: #2a2fe0;
+  color: #fff;
 }
 
 /* min-h 44px = comfortable touch target on phones. */
 .btn {
-  @apply inline-flex min-h-[2.75rem] items-center justify-center rounded-full px-5 py-2 text-sm font-semibold transition
-         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70
+  @apply inline-flex min-h-[2.75rem] items-center justify-center gap-1.5 rounded px-5 py-2 text-sm font-bold uppercase tracking-[0.04em] transition
+         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950
          disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0;
 }
+/* Amber CTA, like "REGISTER ↗". */
 .btn-primary {
-  @apply btn bg-gradient-to-r from-brand via-brand to-brand-600 text-white shadow-glow
-         hover:brightness-110 active:brightness-95;
+  @apply btn bg-accent text-navy-950 hover:bg-white;
 }
+/* Outline, like "TALK TO US". */
 .btn-secondary {
-  @apply btn border border-white/15 bg-white/5 text-sky-100 hover:border-accent/40 hover:bg-white/10;
+  @apply btn border border-white/70 bg-transparent text-white hover:bg-white hover:text-navy-950;
 }
 .btn-danger {
   @apply btn bg-red-600 text-white hover:bg-red-500;
 }
 
-/* Glass panel, like the ATIC site's cards. */
 .card {
-  @apply rounded-2xl border border-accent/20 bg-navy-950/60 p-4 shadow-glass backdrop-blur-xl sm:p-5;
+  @apply rounded-lg border border-white/10 bg-navy-900/85 p-4 shadow-glass backdrop-blur sm:p-5;
 }
 
 /* 16px text on phones — anything smaller makes iOS Safari zoom in on focus. */
 .input {
-  @apply min-h-[2.75rem] w-full rounded-xl border border-white/15 bg-navy-950/70 px-3 py-2 text-base text-white
+  @apply min-h-[2.75rem] w-full rounded border border-white/20 bg-navy-950 px-3 py-2 text-base text-white
          placeholder:text-slate-500
          focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent
          sm:min-h-0 sm:text-sm;
 }
+/* Mono labels, like "[ 2ND EDITION ]" / "(01) ABOUT". */
 .label {
-  @apply mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-accent;
+  @apply mb-1 block font-mono text-xs font-semibold uppercase tracking-[0.12em] text-mist;
 }
 .badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider;
 }
-/* Small uppercase section title, like the site's "IEEE AI & CYBERSECURITY CONGRESS". */
 .eyebrow {
-  @apply text-xs font-semibold uppercase tracking-[0.2em] text-accent;
+  @apply font-mono text-xs font-semibold uppercase tracking-[0.14em] text-accent;
+}
+/* One word in a white block, like the mockup's "A.I." */
+.pill-word {
+  @apply inline-block rounded-md bg-white px-2 text-navy-950;
 }
 
 /* Native dropdown options (Windows/Android render the list with these). */
 select option {
-  background: #00083b;
+  background: #12121c;
   color: #fff;
 }

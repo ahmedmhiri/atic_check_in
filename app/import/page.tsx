@@ -77,7 +77,7 @@ export default function ImportPage() {
             <Tile label="Errors" value={summary.errors} tone="text-red-400" />
           </div>
 
-          <div className="max-h-80 overflow-auto rounded-xl border border-white/10">
+          <div className="max-h-80 overflow-auto rounded-lg border border-white/10">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
                 <tr>
@@ -127,7 +127,7 @@ export default function ImportPage() {
 
 function Tile({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-xl bg-white/5 p-3">
+    <div className="rounded-lg bg-white/5 p-3">
       <div className={`text-2xl font-bold ${tone}`}>{value}</div>
       <div className="text-xs text-slate-400">{label}</div>
     </div>

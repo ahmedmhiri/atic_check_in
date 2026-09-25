@@ -37,18 +37,23 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-[85vh] flex-col items-center justify-center gap-6">
-      <div className="text-center">
-        <Image src="/atic-logo.png" alt="ATIC — Afrotech Intelligence Congress" width={339} height={172} priority className="mx-auto h-20 w-auto sm:h-24" />
-        <p className="eyebrow mt-4">IEEE AI &amp; Cybersecurity Congress</p>
-      </div>
-      <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
-        <div>
-          <h1 className="text-2xl">
-            Check-In <span className="bg-gradient-to-r from-accent to-brand bg-clip-text text-transparent">Admin</span>
-          </h1>
-          <p className="text-sm text-slate-400">Sign in to scan badges and manage attendance.</p>
+    <div className="flex min-h-[88vh] flex-col items-center justify-center gap-7 py-6">
+      <div className="w-full max-w-sm">
+        <span className="inline-block rounded-[10px] bg-white px-3 py-1.5">
+          <Image src="/atic-logo-black.png" alt="ATIC — AfroTech Intelligence Congress" width={659} height={331} priority className="h-10 w-auto" />
+        </span>
+        <div className="mt-5 flex flex-wrap justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-mist">
+          <span>[ 2nd edition ]</span>
+          <span>AfroTech Intelligence Congress</span>
         </div>
+        <h1 className="mt-3 text-[2.6rem] sm:text-5xl">
+          Check-
+          <span className="pill-word">In</span>
+        </h1>
+      </div>
+
+      <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4 !bg-navy-900 !shadow-block">
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-accent">(01) Admin sign in</p>
         <div>
           <label className="label">Email</label>
           <input
@@ -80,6 +85,13 @@ function LoginForm() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
+
+      <div className="flex flex-col items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">Organised by</span>
+        <span className="rounded-[10px] bg-white px-3 py-1.5">
+          <Image src="/ieee-cs-iit.png" alt="IEEE Computer Society — IIT Student Branch Chapter" width={700} height={327} className="h-9 w-auto" />
+        </span>
+      </div>
     </div>
   );
 }

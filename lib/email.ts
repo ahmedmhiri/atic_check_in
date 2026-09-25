@@ -127,19 +127,21 @@ async function deliver(mail: Mail): Promise<string | undefined> {
 // client, and a white body keeps text legible in Outlook/Gmail light & dark modes.
 function logoUrl(): string | null {
   const base = process.env.NEXTAUTH_URL?.replace(/\/+$/, "");
-  return base && /^https:\/\//.test(base) ? `${base}/atic-logo.png` : null;
+  return base && /^https:\/\//.test(base) ? `${base}/atic-logo-black.png` : null;
 }
 
 function layout(body: string): string {
   const logo = logoUrl();
   return `
-  <div style="background:#000940;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
-    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden">
-      <div style="background:#000940;background-image:linear-gradient(135deg,#00083B 0%,#101C63 60%,#1D56FF 140%);padding:22px 24px;text-align:center">
-        ${logo ? `<img src="${logo}" alt="ATIC" height="52" style="height:52px;width:auto;display:inline-block" />` : `<div style="color:#ffffff;font-size:26px;font-weight:900;letter-spacing:1px">ATIC</div>`}
-        <div style="color:#38B6FF;font-size:11px;letter-spacing:3px;margin-top:10px;text-transform:uppercase">IEEE AI &amp; Cybersecurity Congress</div>
+  <div style="background:#0b0b12;padding:24px 12px;font-family:Montserrat,Arial,Helvetica,sans-serif">
+    <div style="max-width:560px;margin:0 auto;background:#f2f0ea;border-radius:8px;overflow:hidden">
+      <div style="background:#0b0b12;padding:22px 24px;border-bottom:4px solid #F2A93B">
+        <div style="display:inline-block;background:#ffffff;border-radius:10px;padding:6px 12px">
+          ${logo ? `<img src="${logo}" alt="ATIC" height="40" style="height:40px;width:auto;display:block" />` : `<div style="color:#0b0b12;font-size:22px;font-weight:900;letter-spacing:1px">ATIC</div>`}
+        </div>
+        <div style="color:#c8c8d8;font-family:Courier New,monospace;font-size:11px;letter-spacing:2px;margin-top:14px;text-transform:uppercase">[ 2nd edition ] &middot; AfroTech Intelligence Congress</div>
       </div>
-      <div style="padding:24px;color:#0b1033;line-height:1.5">
+      <div style="padding:24px;color:#0b0b12;line-height:1.55">
         ${body}
       </div>
     </div>
@@ -155,7 +157,7 @@ interface StudentEmailData {
 function eligibleTemplate({ name, attendancePct }: StudentEmailData) {
   const subject = "🎉 Your ATIC 2.0 Certificate of Completion";
   const html = layout(`
-    <h2 style="color:#1D56FF">Congratulations, ${escapeHtml(name)}!</h2>
+    <h2 style="color:#2A2FE0;font-family:Arial Black,Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px">Congratulations, ${escapeHtml(name)}!</h2>
     <p>Thank you for participating in <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <p>You attended <strong>${attendancePct}%</strong> of the sessions, which meets our
        eligibility threshold. You are <strong>certificate-eligible</strong>.</p>
@@ -169,7 +171,7 @@ function eligibleTemplate({ name, attendancePct }: StudentEmailData) {
 function notEligibleTemplate({ name, attendancePct }: StudentEmailData) {
   const subject = "Thank you for attending ATIC 2.0 — Attendance summary";
   const html = layout(`
-    <h2 style="color:#000940">Thank you for joining us, ${escapeHtml(name)}</h2>
+    <h2 style="color:#0b0b12;font-family:Arial Black,Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px">Thank you for joining us, ${escapeHtml(name)}</h2>
     <p>We appreciate you being part of <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <p>Our records show you attended <strong>${attendancePct}%</strong> of the sessions.
        Unfortunately this is below the ${eligibilityThreshold()}% threshold
@@ -201,7 +203,7 @@ interface QrEmailData {
 export async function sendQrEmail({ name, email, studentId, qrPng }: QrEmailData) {
   const subject = "Your ATIC 2.0 check-in QR code";
   const html = layout(`
-    <h2 style="color:#1D56FF">Hi ${escapeHtml(name)},</h2>
+    <h2 style="color:#2A2FE0;font-family:Arial Black,Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px">Hi ${escapeHtml(name)},</h2>
     <p>Here is your personal check-in QR code for <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <div style="text-align:center;margin:24px 0">
       <img src="cid:qr-code" alt="Your check-in QR code" width="280" height="280"

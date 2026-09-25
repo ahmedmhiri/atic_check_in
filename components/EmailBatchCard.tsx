@@ -91,7 +91,7 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
       </div>
 
       {summary && (
-        <div className="rounded-xl bg-white/5 p-3 text-sm">
+        <div className="rounded-lg bg-white/5 p-3 text-sm">
           {summary.error && <div className="text-red-400">{summary.error}</div>}
           <span>
             Sent <b className="text-emerald-400">{summary.sent}</b>, failed <b className="text-red-400">{summary.failed}</b>
@@ -113,7 +113,7 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
       )}
 
       {log.length > 0 && (
-        <div className="max-h-72 overflow-auto rounded-xl border border-white/10">
+        <div className="max-h-72 overflow-auto rounded-lg border border-white/10">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
               <tr>

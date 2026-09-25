@@ -60,7 +60,7 @@ export default function StudentOverride({
         </label>
       </div>
 
-      <div className="overflow-auto rounded-xl border border-white/10">
+      <div className="overflow-auto rounded-lg border border-white/10">
         <table className="w-full text-sm">
           <thead className="bg-white/5 text-left text-slate-400">
             <tr>

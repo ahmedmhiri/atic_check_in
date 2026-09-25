@@ -1,6 +1,8 @@
 import type { Config } from "tailwindcss";
 
-// ATIC brand (from wie-iit.ieee.tn/atic): deep navy, royal-blue gradient, cyan accent.
+// ATIC 2.0 brand (from the "ATIC Congress Website Mockups" v3):
+// ink #0b0b12, indigo #2A2FE0, amber #F2A93B, cream #f2f0ea.
+// Token names are kept from the previous theme so every page picks these up.
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
@@ -10,24 +12,29 @@ const config: Config = {
     extend: {
       colors: {
         navy: {
-          950: "#00083B",
-          900: "#000940",
-          800: "#07124F",
-          700: "#101C63",
+          950: "#0b0b12", // page background (ink)
+          900: "#12121c", // raised surface
+          800: "#1b1b29",
+          700: "#2a2a35",
         },
         brand: {
-          DEFAULT: "#1D56FF",
-          600: "#3662CE",
+          DEFAULT: "#2A2FE0", // indigo
+          600: "#5B60FF",
         },
-        accent: "#38B6FF",
+        accent: "#F2A93B", // amber
+        cream: "#f2f0ea",
+        mist: "#c8c8d8", // nav / muted text on dark
       },
       fontFamily: {
-        sans: ['"HelveticaNowDisplayW01-Rg"', '"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
-        display: ['"HelveticaNowDisplay-Medium"', '"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
+        sans: ["var(--font-montserrat)", "Montserrat", "Arial", "sans-serif"],
+        display: ["var(--font-unbounded)", "Unbounded", "Arial Black", "sans-serif"],
+        mono: ["var(--font-jetbrains)", '"JetBrains Mono"', "ui-monospace", "monospace"],
       },
       boxShadow: {
-        glass: "0 24px 60px rgba(0, 8, 59, 0.45)",
-        glow: "0 10px 30px -8px rgba(29, 86, 255, 0.55)",
+        glass: "0 1px 0 rgba(255, 255, 255, 0.04) inset",
+        // Hard offset block shadow, as on the mockup's "Your logo here" card.
+        glow: "5px 5px 0 0 #2A2FE0",
+        block: "6px 6px 0 0 #2A2FE0",
       },
     },
   },

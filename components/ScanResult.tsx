@@ -34,7 +34,7 @@ export default function ScanResult({
 
   if (!result) {
     return (
-      <div className="flex min-h-[4.5rem] items-center rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 text-sm text-slate-400">
+      <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-white/15 bg-white/5 px-4 text-sm text-slate-400">
         {idleText}
       </div>
     );
@@ -45,7 +45,7 @@ export default function ScanResult({
       key={result.at}
       role="status"
       aria-live="assertive"
-      className={`min-h-[4.5rem] rounded-2xl border px-4 py-3 shadow-glass ${TONES[tone]}`}
+      className={`min-h-[4.5rem] rounded-lg border px-4 py-3 shadow-glass ${TONES[tone]}`}
     >
       <div className="text-xs font-semibold uppercase tracking-wide opacity-80">{result.status.replace("_", " ")}</div>
       <div className="text-lg font-semibold leading-snug">{result.message}</div>
