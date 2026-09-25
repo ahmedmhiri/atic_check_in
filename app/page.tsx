@@ -29,17 +29,39 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Overview</h1>
+      <div>
+        <p className="eyebrow">ATIC 2.0 · Live dashboard</p>
+        <h1 className="mt-1 text-3xl sm:text-4xl">
+          Event <span className="text-accent">Overview</span>
+        </h1>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Card label="Imported" value={totalStudents} />
-        <Card label="Hotel Checked-In" value={hotelCheckedIn} tone="text-green-600" />
-        <Card label="Not Arrived" value={totalStudents - hotelCheckedIn} tone="text-amber-600" />
+        <Card label="Hotel Checked-In" value={hotelCheckedIn} tone="text-emerald-400" />
+        <Card label="Not Arrived" value={totalStudents - hotelCheckedIn} tone="text-amber-300" />
         <Card label="Time Slots" value={totalSlots} />
       </div>
 
+      {totalStudents > 0 && (
+        <div className="card">
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="eyebrow">Arrivals</h2>
+            <span className="text-sm text-slate-300">
+              <b className="text-white">{Math.round((hotelCheckedIn / totalStudents) * 100)}%</b> checked in
+            </span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-brand to-accent shadow-glow transition-all"
+              style={{ width: `${(hotelCheckedIn / totalStudents) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="card">
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">
+        <h2 className="mb-3 eyebrow">
           Live Track Occupancy (current time slot)
         </h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -47,11 +69,11 @@ export default async function DashboardPage() {
             <Link
               key={t.id}
               href={`/scan/${t.id}`}
-              className="rounded-md border border-slate-200 p-4 hover:border-teal-400 hover:bg-teal-50"
+              className="group rounded-xl border border-white/10 bg-white/5 p-4 transition hover:border-accent/60 hover:bg-accent/10"
             >
-              <div className="text-2xl font-bold text-teal-700">{t._count.currentStudents}</div>
-              <div className="text-sm text-slate-600">{t.name}</div>
-              <div className="mt-1 text-xs text-teal-600">Open scanner →</div>
+              <div className="font-display text-3xl font-black text-white">{t._count.currentStudents}</div>
+              <div className="text-sm font-semibold text-slate-200">{t.name}</div>
+              <div className="mt-1 text-xs text-accent transition group-hover:translate-x-0.5">Open scanner →</div>
             </Link>
           ))}
         </div>
@@ -60,10 +82,10 @@ export default async function DashboardPage() {
       <FinalizeButton />
 
       <div className="card">
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Students</h2>
-        <div className="max-h-[28rem] overflow-auto rounded-md border border-slate-200">
+        <h2 className="mb-3 eyebrow">Students</h2>
+        <div className="max-h-[28rem] overflow-auto rounded-xl border border-white/10">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
+            <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
               <tr>
                 <th className="hidden px-3 py-2 sm:table-cell">Student ID</th>
                 <th className="px-3 py-2">Name</th>
@@ -78,27 +100,27 @@ export default async function DashboardPage() {
                 const count = attended.get(s.id) ?? 0;
                 const pct = totalSlots ? Math.round((count / totalSlots) * 100) : 0;
                 return (
-                  <tr key={s.id} className="border-t border-slate-100">
+                  <tr key={s.id} className="border-t border-white/5 transition hover:bg-white/5">
                     <td className="hidden px-3 py-1.5 font-mono text-xs sm:table-cell">{s.studentId}</td>
                     <td className="px-3 py-2 sm:py-1.5">
-                      <Link href={`/students/${s.id}`} className="text-slate-900 underline-offset-2 hover:underline">
+                      <Link href={`/students/${s.id}`} className="text-white underline-offset-2 hover:underline">
                         {s.name}
                       </Link>
-                      <div className="font-mono text-[11px] text-slate-400 sm:hidden">{s.studentId}</div>
+                      <div className="font-mono text-[11px] text-slate-500 sm:hidden">{s.studentId}</div>
                     </td>
                     <td className="px-3 py-1.5">
                       {s.hotelCheckIn ? (
-                        <span className="badge bg-green-100 text-green-700">in</span>
+                        <span className="badge bg-emerald-400/15 text-emerald-300">in</span>
                       ) : (
-                        <span className="badge bg-slate-100 text-slate-500">—</span>
+                        <span className="badge bg-white/10 text-slate-400">—</span>
                       )}
                     </td>
-                    <td className="hidden px-3 py-1.5 text-slate-600 md:table-cell">{s.currentTrack?.name ?? "—"}</td>
+                    <td className="hidden px-3 py-1.5 text-slate-300 md:table-cell">{s.currentTrack?.name ?? "—"}</td>
                     <td className="whitespace-nowrap px-3 py-1.5">
-                      {count}/{totalSlots} <span className="text-slate-400">({pct}%)</span>
+                      {count}/{totalSlots} <span className="text-slate-500">({pct}%)</span>
                     </td>
                     <td className="hidden px-3 py-1.5 text-right sm:table-cell">
-                      <Link href={`/students/${s.id}`} className="text-teal-600 hover:underline">
+                      <Link href={`/students/${s.id}`} className="text-accent hover:underline">
                         Details
                       </Link>
                     </td>
@@ -107,7 +129,7 @@ export default async function DashboardPage() {
               })}
               {students.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
+                  <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
                     No students yet — import a spreadsheet.
                   </td>
                 </tr>
@@ -120,11 +142,11 @@ export default async function DashboardPage() {
   );
 }
 
-function Card({ label, value, tone = "text-slate-700" }: { label: string; value: number; tone?: string }) {
+function Card({ label, value, tone = "text-white" }: { label: string; value: number; tone?: string }) {
   return (
     <div className="card">
-      <div className={`text-3xl font-bold ${tone}`}>{value}</div>
-      <div className="text-sm text-slate-500">{label}</div>
+      <div className={`font-display text-3xl font-black sm:text-4xl ${tone}`}>{value}</div>
+      <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</div>
     </div>
   );
 }

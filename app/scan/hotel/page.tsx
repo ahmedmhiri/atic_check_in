@@ -63,10 +63,10 @@ export default function HotelScanPage() {
   return (
     <div className="mx-auto max-w-lg space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-xl font-semibold">Hotel Check-In</h1>
+        <h1 className="text-2xl sm:text-3xl">Hotel Check-In</h1>
         {stats && (
-          <span className="text-sm text-slate-500">
-            <b className="text-green-600">{stats.hotelCheckedIn}</b> / {stats.totalStudents} arrived
+          <span className="text-sm text-slate-400">
+            <b className="text-emerald-400">{stats.hotelCheckedIn}</b> / {stats.totalStudents} arrived
           </span>
         )}
       </div>
@@ -76,15 +76,15 @@ export default function HotelScanPage() {
       <QrScanner onScan={handleScan} paused={busy} />
 
       <div className="card">
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Live Arrivals</h2>
+        <h2 className="mb-3 eyebrow">Live Arrivals</h2>
         {stats ? (
           <div className="grid grid-cols-3 gap-2 text-center sm:gap-3">
-            <Stat label="Arrived" value={stats.hotelCheckedIn} tone="text-green-600" />
-            <Stat label="Not yet" value={stats.notArrived} tone="text-amber-600" />
-            <Stat label="Total" value={stats.totalStudents} tone="text-slate-700" />
+            <Stat label="Arrived" value={stats.hotelCheckedIn} tone="text-emerald-400" />
+            <Stat label="Not yet" value={stats.notArrived} tone="text-amber-300" />
+            <Stat label="Total" value={stats.totalStudents} tone="text-slate-100" />
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Loading…</p>
+          <p className="text-sm text-slate-500">Loading…</p>
         )}
       </div>
     </div>
@@ -93,9 +93,9 @@ export default function HotelScanPage() {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-md bg-slate-50 p-3">
+    <div className="rounded-xl bg-white/5 p-3">
       <div className={`text-2xl font-bold ${tone}`}>{value}</div>
-      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xs text-slate-400">{label}</div>
     </div>
   );
 }

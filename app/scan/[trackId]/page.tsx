@@ -122,7 +122,7 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
   // phone the result must sit above the camera to be visible without scrolling.
   return (
     <div className="mx-auto max-w-lg space-y-3">
-      <h1 className="text-xl font-semibold">{trackName} — Workshop Scan</h1>
+      <h1 className="text-2xl sm:text-3xl">{trackName} — Workshop Scan</h1>
 
       <div className="card space-y-2">
         <label className="label" htmlFor="slot">
@@ -137,10 +137,10 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
           ))}
         </select>
         {slotId && !activeSession && (
-          <p className="text-sm text-red-600">No session for this track in the selected slot.</p>
+          <p className="text-sm text-red-400">No session for this track in the selected slot.</p>
         )}
         {activeSession && selectedSlot && !slotIsLive && (
-          <p className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-sm text-amber-800">
+          <p className="rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-sm text-amber-200">
             ⚠ This slot is not in progress (runs {fmtTime(selectedSlot.startTime)} –{" "}
             {fmtTime(selectedSlot.endTime)}). Scans will be recorded against it anyway — double-check you picked
             the right slot.
@@ -154,7 +154,7 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
           <QrScanner onScan={handleScan} paused={busy} />
         </>
       ) : (
-        <div className="card text-sm text-slate-400">Choose a time slot to enable the scanner.</div>
+        <div className="card text-sm text-slate-500">Choose a time slot to enable the scanner.</div>
       )}
 
       {/* Kept at the bottom, away from the scan area, so it isn't hit by accident. */}

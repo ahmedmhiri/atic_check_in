@@ -4,15 +4,16 @@ import Providers from "@/components/Providers";
 import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Event Attendance Admin",
-  description: "Admin-only attendance system for the 2-day workshop event",
+  title: "ATIC Check-In",
+  description: "Check-in & attendance for ATIC — IEEE AI & Cybersecurity Congress",
+  icons: { icon: "/atic-logo.png" },
 };
 
 // Explicit so phones render at device width; zoom stays allowed for accessibility.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0d9488",
+  themeColor: "#000940",
 };
 
 // This app is entirely behind admin auth and reads the live DB — nothing

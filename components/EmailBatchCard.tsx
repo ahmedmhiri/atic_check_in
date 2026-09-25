@@ -82,8 +82,8 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
     <div className="card space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-500">{title}</h2>
-          <p className="text-xs text-slate-400">{description}</p>
+          <h2 className="eyebrow">{title}</h2>
+          <p className="text-xs text-slate-500">{description}</p>
         </div>
         <button className="btn-primary w-full sm:w-auto" onClick={run} disabled={loading}>
           {loading ? "Sending…" : buttonLabel}
@@ -91,10 +91,10 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
       </div>
 
       {summary && (
-        <div className="rounded-md bg-slate-50 p-3 text-sm">
-          {summary.error && <div className="text-red-600">{summary.error}</div>}
+        <div className="rounded-xl bg-white/5 p-3 text-sm">
+          {summary.error && <div className="text-red-400">{summary.error}</div>}
           <span>
-            Sent <b className="text-green-600">{summary.sent}</b>, failed <b className="text-red-600">{summary.failed}</b>
+            Sent <b className="text-emerald-400">{summary.sent}</b>, failed <b className="text-red-400">{summary.failed}</b>
             {showEligibility && (
               <>
                 {" "}
@@ -107,15 +107,15 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
             )}
           </span>
           {!summary.running && summary.failed > 0 && (
-            <div className="text-xs text-slate-500">Run it again to retry the failed ones.</div>
+            <div className="text-xs text-slate-400">Run it again to retry the failed ones.</div>
           )}
         </div>
       )}
 
       {log.length > 0 && (
-        <div className="max-h-72 overflow-auto rounded-md border border-slate-200">
+        <div className="max-h-72 overflow-auto rounded-xl border border-white/10">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
+            <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
               <tr>
                 <th className="px-3 py-2">Student</th>
                 {showEligibility && (
@@ -129,11 +129,11 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
             </thead>
             <tbody>
               {log.map((l) => (
-                <tr key={l.id} className="border-t border-slate-100 align-top">
+                <tr key={l.id} className="border-t border-white/5 align-top">
                   <td className="px-3 py-1.5">
-                    {l.name} <span className="text-slate-400">({l.studentId})</span>
+                    {l.name} <span className="text-slate-500">({l.studentId})</span>
                     {/* Inline, not a tooltip — tooltips don't exist on touch screens. */}
-                    {l.error && <div className="text-xs text-red-500">{l.error}</div>}
+                    {l.error && <div className="text-xs text-red-400">{l.error}</div>}
                   </td>
                   {showEligibility && (
                     <>
@@ -143,9 +143,9 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
                   )}
                   <td className="px-3 py-1.5">
                     {l.status === "sent" ? (
-                      <span className="text-green-600">sent</span>
+                      <span className="text-emerald-400">sent</span>
                     ) : (
-                      <span className="text-red-600">failed</span>
+                      <span className="text-red-400">failed</span>
                     )}
                   </td>
                 </tr>

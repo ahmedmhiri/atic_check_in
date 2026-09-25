@@ -33,7 +33,7 @@ function fromAddress(): string {
   if (emailProvider() === "smtp") {
     // Gmail / Office 365 only send as the logged-in account: keep the display
     // name from EMAIL_FROM but always use SMTP_USER as the address.
-    const name = configured?.match(/^\s*"?([^"<]*?)"?\s*</)?.[1]?.trim() || "Event Team";
+    const name = configured?.match(/^\s*"?([^"<]*?)"?\s*</)?.[1]?.trim() || "ATIC Team";
     return `"${name.replace(/"/g, "")}" <${process.env.SMTP_USER}>`;
   }
   return configured ?? "Event Team <onboarding@resend.dev>";
@@ -122,6 +122,30 @@ async function deliver(mail: Mail): Promise<string | undefined> {
   return data?.id;
 }
 
+// ---- Branded email layout (ATIC colours) ----
+// Navy header with the logo over a white card: dark headers read well in every
+// client, and a white body keeps text legible in Outlook/Gmail light & dark modes.
+function logoUrl(): string | null {
+  const base = process.env.NEXTAUTH_URL?.replace(/\/+$/, "");
+  return base && /^https:\/\//.test(base) ? `${base}/atic-logo.png` : null;
+}
+
+function layout(body: string): string {
+  const logo = logoUrl();
+  return `
+  <div style="background:#000940;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden">
+      <div style="background:#000940;background-image:linear-gradient(135deg,#00083B 0%,#101C63 60%,#1D56FF 140%);padding:22px 24px;text-align:center">
+        ${logo ? `<img src="${logo}" alt="ATIC" height="52" style="height:52px;width:auto;display:inline-block" />` : `<div style="color:#ffffff;font-size:26px;font-weight:900;letter-spacing:1px">ATIC</div>`}
+        <div style="color:#38B6FF;font-size:11px;letter-spacing:3px;margin-top:10px;text-transform:uppercase">IEEE AI &amp; Cybersecurity Congress</div>
+      </div>
+      <div style="padding:24px;color:#0b1033;line-height:1.5">
+        ${body}
+      </div>
+    </div>
+  </div>`;
+}
+
 interface StudentEmailData {
   name: string;
   email: string;
@@ -129,33 +153,31 @@ interface StudentEmailData {
 }
 
 function eligibleTemplate({ name, attendancePct }: StudentEmailData) {
-  const subject = "🎉 Your Certificate of Completion";
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
-    <h2 style="color:#0f766e">Congratulations, ${escapeHtml(name)}!</h2>
-    <p>Thank you for participating in our 2-day workshop event.</p>
+  const subject = "🎉 Your ATIC 2.0 Certificate of Completion";
+  const html = layout(`
+    <h2 style="color:#1D56FF">Congratulations, ${escapeHtml(name)}!</h2>
+    <p>Thank you for participating in <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <p>You attended <strong>${attendancePct}%</strong> of the sessions, which meets our
        eligibility threshold. You are <strong>certificate-eligible</strong>.</p>
     <p>Your certificate of completion is attached / will be issued shortly.</p>
-    <p style="margin-top:24px">Warm regards,<br/>The Event Team</p>
-  </div>`;
-  const text = `Congratulations, ${name}! You attended ${attendancePct}% of sessions and are certificate-eligible. Your certificate will be issued shortly. — The Event Team`;
+    <p style="margin-top:24px">Warm regards,<br/>The ATIC Team</p>
+  `);
+  const text = `Congratulations, ${name}! You attended ${attendancePct}% of sessions and are certificate-eligible. Your certificate will be issued shortly. — The ATIC Team`;
   return { subject, html, text };
 }
 
 function notEligibleTemplate({ name, attendancePct }: StudentEmailData) {
-  const subject = "Thank you for attending — Attendance summary";
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
-    <h2 style="color:#b45309">Thank you for joining us, ${escapeHtml(name)}</h2>
-    <p>We appreciate you being part of our 2-day workshop event.</p>
+  const subject = "Thank you for attending ATIC 2.0 — Attendance summary";
+  const html = layout(`
+    <h2 style="color:#000940">Thank you for joining us, ${escapeHtml(name)}</h2>
+    <p>We appreciate you being part of <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <p>Our records show you attended <strong>${attendancePct}%</strong> of the sessions.
        Unfortunately this is below the ${eligibilityThreshold()}% threshold
        required for a certificate of completion.</p>
     <p>If you believe this is an error, please reply to this email and we'll review your attendance.</p>
-    <p style="margin-top:24px">Warm regards,<br/>The Event Team</p>
-  </div>`;
-  const text = `Thank you, ${name}. You attended ${attendancePct}% of sessions, below the required threshold for a certificate. Reply if you think this is an error. — The Event Team`;
+    <p style="margin-top:24px">Warm regards,<br/>The ATIC Team</p>
+  `);
+  const text = `Thank you, ${name}. You attended ${attendancePct}% of sessions, below the required threshold for a certificate. Reply if you think this is an error. — The ATIC Team`;
   return { subject, html, text };
 }
 
@@ -177,11 +199,10 @@ interface QrEmailData {
  * also attached as a PNG so it can be saved to the phone's photos.
  */
 export async function sendQrEmail({ name, email, studentId, qrPng }: QrEmailData) {
-  const subject = "Your event check-in QR code";
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
-    <h2 style="color:#0f766e">Hi ${escapeHtml(name)},</h2>
-    <p>Here is your personal QR code for the 2-day workshop event.</p>
+  const subject = "Your ATIC 2.0 check-in QR code";
+  const html = layout(`
+    <h2 style="color:#1D56FF">Hi ${escapeHtml(name)},</h2>
+    <p>Here is your personal check-in QR code for <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <div style="text-align:center;margin:24px 0">
       <img src="cid:qr-code" alt="Your check-in QR code" width="280" height="280"
            style="width:280px;height:280px;border:1px solid #e2e8f0;border-radius:8px" />
@@ -195,9 +216,9 @@ export async function sendQrEmail({ name, email, studentId, qrPng }: QrEmailData
     <p><strong>Tips:</strong> save the attached image to your phone's photos so you have it offline,
        and turn your screen brightness up when it's scanned. A printed copy works too.</p>
     <p style="color:#b45309">This code is personal — please don't share it.</p>
-    <p style="margin-top:24px">See you there,<br/>The Event Team</p>
-  </div>`;
-  const text = `Hi ${name}, your personal check-in QR code for the workshop event is attached (Student ID: ${studentId}). Show it at hotel check-in and at the door of every workshop session. Save it to your phone and turn brightness up when scanning. Please don't share it. — The Event Team`;
+    <p style="margin-top:24px">See you there,<br/>The ATIC Team</p>
+  `);
+  const text = `Hi ${name}, your personal check-in QR code for ATIC 2.0 is attached (Student ID: ${studentId}). Show it at hotel check-in and at the door of every workshop session. Save it to your phone and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
 
   const safeId = studentId.replace(/[^a-z0-9_-]+/gi, "_");
   return deliver({

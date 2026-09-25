@@ -32,11 +32,11 @@ export default function ResendQrButton({ id, email, sentAt }: { id: string; emai
   return (
     <div className="card flex flex-wrap items-center justify-between gap-3">
       <div className="text-sm">
-        <div className="font-semibold text-slate-500">QR Code Email</div>
-        <div className="text-slate-500">
+        <div className="eyebrow mb-1">QR Code Email</div>
+        <div className="text-slate-400">
           {sentAt ? `Sent ${new Date(sentAt).toLocaleString()}` : "Not sent yet"}
         </div>
-        {msg && <div className={msg.ok ? "text-green-600" : "text-red-600"}>{msg.text}</div>}
+        {msg && <div className={msg.ok ? "text-emerald-400" : "text-red-400"}>{msg.text}</div>}
       </div>
       <button className="btn-secondary w-full sm:w-auto" onClick={send} disabled={busy}>
         {busy ? "Sending…" : sentAt ? "Resend QR code" : "Send QR code"}

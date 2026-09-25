@@ -40,8 +40,8 @@ export default function ImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Spreadsheet Import</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl sm:text-3xl">Spreadsheet Import</h1>
+        <p className="text-sm text-slate-400">
           Upload a .xlsx or .csv with columns: <code>name</code>, <code>email</code>, <code>studentId</code>.
           QR tokens are auto-generated. Duplicates are skipped.
         </p>
@@ -66,20 +66,20 @@ export default function ImportPage() {
         </a>
       </form>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
       {summary && (
         <div className="card space-y-4">
           <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 sm:gap-3">
-            <Tile label="Total rows" value={summary.total} tone="text-slate-700" />
-            <Tile label="Created" value={summary.created} tone="text-green-600" />
-            <Tile label="Skipped" value={summary.skipped} tone="text-amber-600" />
-            <Tile label="Errors" value={summary.errors} tone="text-red-600" />
+            <Tile label="Total rows" value={summary.total} tone="text-slate-100" />
+            <Tile label="Created" value={summary.created} tone="text-emerald-400" />
+            <Tile label="Skipped" value={summary.skipped} tone="text-amber-300" />
+            <Tile label="Errors" value={summary.errors} tone="text-red-400" />
           </div>
 
-          <div className="max-h-80 overflow-auto rounded-md border border-slate-200">
+          <div className="max-h-80 overflow-auto rounded-xl border border-white/10">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
+              <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
                 <tr>
                   <th className="px-3 py-2">Row</th>
                   <th className="px-3 py-2">Student ID</th>
@@ -89,23 +89,23 @@ export default function ImportPage() {
               </thead>
               <tbody>
                 {summary.details.map((d, i) => (
-                  <tr key={i} className="border-t border-slate-100">
+                  <tr key={i} className="border-t border-white/5">
                     <td className="px-3 py-1.5">{d.row}</td>
                     <td className="px-3 py-1.5">{d.studentId ?? "—"}</td>
                     <td className="px-3 py-1.5">
                       <span
                         className={`badge ${
                           d.status === "created"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-emerald-400/15 text-emerald-300"
                             : d.status === "skipped"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-red-100 text-red-700"
+                            ? "bg-amber-400/15 text-amber-300"
+                            : "bg-red-500/15 text-red-300"
                         }`}
                       >
                         {d.status}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 text-slate-500">{d.reason ?? ""}</td>
+                    <td className="px-3 py-1.5 text-slate-400">{d.reason ?? ""}</td>
                   </tr>
                 ))}
               </tbody>
@@ -127,9 +127,9 @@ export default function ImportPage() {
 
 function Tile({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-md bg-slate-50 p-3">
+    <div className="rounded-xl bg-white/5 p-3">
       <div className={`text-2xl font-bold ${tone}`}>{value}</div>
-      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xs text-slate-400">{label}</div>
     </div>
   );
 }

@@ -47,10 +47,10 @@ export default function StudentOverride({
   return (
     <div className="card space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-500">Manual Override</h2>
-        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm">
+        <h2 className="eyebrow">Manual Override</h2>
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-sm">
           <input
-            className="h-5 w-5 accent-teal-600"
+            className="h-5 w-5 accent-brand"
             type="checkbox"
             checked={hotelCheckedIn}
             disabled={busy}
@@ -60,9 +60,9 @@ export default function StudentOverride({
         </label>
       </div>
 
-      <div className="overflow-auto rounded-md border border-slate-200">
+      <div className="overflow-auto rounded-xl border border-white/10">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
+          <thead className="bg-white/5 text-left text-slate-400">
             <tr>
               <th className="px-3 py-2">Time Slot</th>
               <th className="px-3 py-2">Selected Track</th>
@@ -75,7 +75,7 @@ export default function StudentOverride({
               const targetOcc = selected?.occurrenceId ?? null;
               const attended = !!r.attendanceRecordId;
               return (
-                <tr key={r.slotId} className="border-t border-slate-100">
+                <tr key={r.slotId} className="border-t border-white/5">
                   <td className="px-3 py-2">{r.slotLabel}</td>
                   <td className="px-3 py-2">
                     <select
@@ -111,9 +111,9 @@ export default function StudentOverride({
                   <td className="px-3 py-2">
                     {attended ? (
                       <div className="flex items-center gap-2">
-                        <span className="badge bg-green-100 text-green-700">{r.attendedStatus}</span>
+                        <span className="badge bg-emerald-400/15 text-emerald-300">{r.attendedStatus}</span>
                         <button
-                          className="rounded-md border border-red-200 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                          className="rounded-md border border-red-400/30 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10"
                           disabled={busy}
                           onClick={() =>
                             call({ action: "deleteAttendance", attendanceRecordId: r.attendanceRecordId })
@@ -124,7 +124,7 @@ export default function StudentOverride({
                       </div>
                     ) : targetOcc ? (
                       <button
-                        className="whitespace-nowrap rounded-md border border-teal-200 px-3 py-2 text-xs text-teal-700 hover:bg-teal-50"
+                        className="whitespace-nowrap rounded-md border border-accent/30 px-3 py-2 text-xs text-accent hover:bg-accent/10"
                         disabled={busy}
                         onClick={() =>
                           call({
@@ -138,7 +138,7 @@ export default function StudentOverride({
                         mark present
                       </button>
                     ) : (
-                      <span className="text-xs text-slate-400">pick a track first</span>
+                      <span className="text-xs text-slate-500">pick a track first</span>
                     )}
                   </td>
                 </tr>

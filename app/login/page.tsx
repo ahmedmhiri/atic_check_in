@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -36,11 +37,17 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center">
+    <div className="flex min-h-[85vh] flex-col items-center justify-center gap-6">
+      <div className="text-center">
+        <Image src="/atic-logo.png" alt="ATIC — Afrotech Intelligence Congress" width={339} height={172} priority className="mx-auto h-20 w-auto sm:h-24" />
+        <p className="eyebrow mt-4">IEEE AI &amp; Cybersecurity Congress</p>
+      </div>
       <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
         <div>
-          <h1 className="text-lg font-semibold text-teal-700">Admin Sign In</h1>
-          <p className="text-sm text-slate-500">Event Attendance System</p>
+          <h1 className="text-2xl">
+            Check-In <span className="bg-gradient-to-r from-accent to-brand bg-clip-text text-transparent">Admin</span>
+          </h1>
+          <p className="text-sm text-slate-400">Sign in to scan badges and manage attendance.</p>
         </div>
         <div>
           <label className="label">Email</label>
@@ -68,7 +75,7 @@ function LoginForm() {
             required
           />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <button className="btn-primary w-full" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
         </button>

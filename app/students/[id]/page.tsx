@@ -60,14 +60,14 @@ export default async function StudentPage({ params }: { params: { id: string } }
 
   return (
     <div className="space-y-6">
-      <Link href="/" className="text-sm text-teal-600 hover:underline">
+      <Link href="/" className="text-sm text-accent hover:underline">
         ← Back to dashboard
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">{student.name}</h1>
-          <p className="break-all text-sm text-slate-500">
+          <h1 className="text-2xl sm:text-3xl">{student.name}</h1>
+          <p className="break-all text-sm text-slate-400">
             {student.email} · <span className="font-mono">{student.studentId}</span>
           </p>
         </div>
@@ -83,10 +83,10 @@ export default async function StudentPage({ params }: { params: { id: string } }
       </div>
 
       <div className="card">
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Slot-by-Slot History</h2>
+        <h2 className="mb-3 eyebrow">Slot-by-Slot History</h2>
         <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-slate-500">
+          <thead className="text-left text-slate-400">
             <tr>
               <th className="px-3 py-2">Time Slot</th>
               <th className="px-3 py-2">Track Chosen</th>
@@ -97,14 +97,14 @@ export default async function StudentPage({ params }: { params: { id: string } }
             {rows.map((r) => {
               const trackName = r.sessions.find((s) => s.trackId === r.selectedTrackId)?.trackName;
               return (
-                <tr key={r.slotId} className="border-t border-slate-100">
+                <tr key={r.slotId} className="border-t border-white/5">
                   <td className="px-3 py-2">{r.slotLabel}</td>
-                  <td className="px-3 py-2">{trackName ?? <span className="text-slate-400">—</span>}</td>
+                  <td className="px-3 py-2">{trackName ?? <span className="text-slate-500">—</span>}</td>
                   <td className="px-3 py-2">
                     {r.attendanceRecordId ? (
-                      <span className="badge bg-green-100 text-green-700">{r.attendedStatus}</span>
+                      <span className="badge bg-emerald-400/15 text-emerald-300">{r.attendedStatus}</span>
                     ) : (
-                      <span className="badge bg-slate-100 text-slate-500">absent</span>
+                      <span className="badge bg-white/10 text-slate-400">absent</span>
                     )}
                   </td>
                 </tr>
@@ -129,9 +129,9 @@ export default async function StudentPage({ params }: { params: { id: string } }
 function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="card text-center sm:min-w-[7rem]">
-      <div className="text-2xl font-bold text-teal-700">{value}</div>
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
+      <div className="text-2xl font-bold text-accent">{value}</div>
+      <div className="text-xs font-medium text-slate-400">{label}</div>
+      {sub && <div className="text-[11px] text-slate-500">{sub}</div>}
     </div>
   );
 }
