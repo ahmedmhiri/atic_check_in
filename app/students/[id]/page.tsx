@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StudentOverride, { SlotRow } from "@/components/StudentOverride";
 import ResendQrButton from "@/components/ResendQrButton";
+import DeleteStudentButton from "@/components/DeleteStudentButton";
 import { eligibilityThreshold } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
@@ -122,6 +123,8 @@ export default async function StudentPage({ params }: { params: { id: string } }
       />
 
       <StudentOverride studentId={student.id} hotelCheckedIn={!!student.hotelCheckIn} rows={rows} />
+
+      <DeleteStudentButton id={student.id} name={student.name} studentId={student.studentId} />
     </div>
   );
 }
