@@ -39,9 +39,7 @@ function LoginForm() {
   return (
     <div className="flex min-h-[88vh] flex-col items-center justify-center gap-7 py-6">
       <div className="w-full max-w-sm">
-        <span className="inline-block rounded-[10px] bg-white px-3 py-1.5">
-          <Image src="/atic-logo-black.png" alt="ATIC — AfroTech Intelligence Congress" width={659} height={331} priority className="h-10 w-auto" />
-        </span>
+        <Image src="/atic-logo.png" alt="ATIC — AfroTech Intelligence Congress" width={339} height={172} priority className="h-16 w-auto" />
         <div className="mt-5 flex flex-wrap justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-mist">
           <span>[ 2nd edition ]</span>
           <span>AfroTech Intelligence Congress</span>

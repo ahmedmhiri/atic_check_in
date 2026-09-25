@@ -13,7 +13,7 @@ const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "600"], v
 export const metadata: Metadata = {
   title: "ATIC 2.0 Check-In",
   description: "Check-in & attendance for ATIC 2.0 — AfroTech Intelligence Congress",
-  icons: { icon: "/atic-logo-black.png" },
+  icons: { icon: "/atic-logo.png" },
 };
 
 // Explicit so phones render at device width; zoom stays allowed for accessibility.

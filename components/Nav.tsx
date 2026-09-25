@@ -26,10 +26,7 @@ export default function Nav() {
       {/* Phones: brand + sign-out on the first row, links full-width below. */}
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-1 px-3 py-2.5 sm:px-4 sm:py-3">
         <Link href="/" className="flex items-center gap-3" aria-label="ATIC Check-In home">
-          {/* Black logo on a white block, exactly like the mockup header. */}
-          <span className="rounded-[10px] bg-white px-2.5 py-1">
-            <Image src="/atic-logo-black.png" alt="ATIC" width={659} height={331} priority className="h-7 w-auto" />
-          </span>
+          <Image src="/atic-logo.png" alt="ATIC" width={339} height={172} priority className="h-9 w-auto" />
           <span className="hidden font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mist sm:inline">
             [ Check-In ]
           </span>

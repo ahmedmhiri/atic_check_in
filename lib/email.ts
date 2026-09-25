@@ -127,7 +127,7 @@ async function deliver(mail: Mail): Promise<string | undefined> {
 // client, and a white body keeps text legible in Outlook/Gmail light & dark modes.
 function logoUrl(): string | null {
   const base = process.env.NEXTAUTH_URL?.replace(/\/+$/, "");
-  return base && /^https:\/\//.test(base) ? `${base}/atic-logo-black.png` : null;
+  return base && /^https:\/\//.test(base) ? `${base}/atic-logo.png` : null;
 }
 
 function layout(body: string): string {
@@ -136,9 +136,7 @@ function layout(body: string): string {
   <div style="background:#0b0b12;padding:24px 12px;font-family:Montserrat,Arial,Helvetica,sans-serif">
     <div style="max-width:560px;margin:0 auto;background:#f2f0ea;border-radius:8px;overflow:hidden">
       <div style="background:#0b0b12;padding:22px 24px;border-bottom:4px solid #F2A93B">
-        <div style="display:inline-block;background:#ffffff;border-radius:10px;padding:6px 12px">
-          ${logo ? `<img src="${logo}" alt="ATIC" height="40" style="height:40px;width:auto;display:block" />` : `<div style="color:#0b0b12;font-size:22px;font-weight:900;letter-spacing:1px">ATIC</div>`}
-        </div>
+        ${logo ? `<img src="${logo}" alt="ATIC" height="48" style="height:48px;width:auto;display:block" />` : `<div style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:1px">ATIC</div>`}
         <div style="color:#c8c8d8;font-family:Courier New,monospace;font-size:11px;letter-spacing:2px;margin-top:14px;text-transform:uppercase">[ 2nd edition ] &middot; AfroTech Intelligence Congress</div>
       </div>
       <div style="padding:24px;color:#0b0b12;line-height:1.55">
