@@ -1,0 +1,4 @@
+# Secrets live in Vercel env vars; never upload local env files with a CLI deploy.
+.env
+.env.*
+!.env.example
