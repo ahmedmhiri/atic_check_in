@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/guard";
+import { requireStaff } from "@/lib/guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // GET /api/stats -> live overview numbers for dashboards.
 export async function GET() {
   try {
-    await requireAdmin();
+    await requireStaff();
   } catch (r) {
     return r as Response;
   }

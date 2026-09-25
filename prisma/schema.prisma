@@ -13,6 +13,12 @@ enum AttendanceStatus {
   LATE
 }
 
+// ADMIN: everything. SCANNER: volunteer — scan pages only.
+enum Role {
+  ADMIN
+  SCANNER
+}
+
 model Student {
   id             String   @id @default(cuid())
   name           String
@@ -118,6 +124,8 @@ model Admin {
   name           String
   email          String  @unique
   password       String // bcrypt hash
+  role           Role     @default(ADMIN)
+  // For SCANNER accounts: if set, they may only scan this track (hotel desk still allowed).
   assignedTrackId String?
   assignedTrack  Track?  @relation(fields: [assignedTrackId], references: [id])
   createdAt      DateTime @default(now())

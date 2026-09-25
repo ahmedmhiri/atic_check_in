@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/guard";
+import { requireStaff } from "@/lib/guard";
 
 export const runtime = "nodejs";
 
 // POST { qrToken, roomNumber?, notes? }
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireStaff();
   } catch (r) {
     return r as Response;
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/guard";
+import { requireStaff } from "@/lib/guard";
 
 export const runtime = "nodejs";
 
@@ -13,13 +13,23 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { trackId: string } }
 ) {
+  let session;
   try {
-    await requireAdmin();
+    session = await requireStaff();
   } catch (r) {
     return r as Response;
   }
 
   const { trackId } = params;
+
+  // Volunteers locked to a track can only record attendance for that track.
+  const lockedTrack = session.user.role === "SCANNER" ? session.user.assignedTrackId : null;
+  if (lockedTrack && lockedTrack !== trackId) {
+    return NextResponse.json(
+      { status: "rejected", message: "Your volunteer account is assigned to a different track" },
+      { status: 403 }
+    );
+  }
   const body = await req.json().catch(() => ({}));
   const qrToken = (body.qrToken ?? "").trim();
   const timeSlotId = (body.timeSlotId ?? "").trim();

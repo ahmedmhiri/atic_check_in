@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import QrScanner from "@/components/QrScanner";
 import ScanResult, { ScanTone } from "@/components/ScanResult";
 
@@ -42,6 +43,8 @@ type Result = { status: string; message: string; at: number } | null;
 
 export default function TrackScanPage({ params }: { params: { trackId: string } }) {
   const { trackId } = params;
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotId, setSlotId] = useState("");
   const [result, setResult] = useState<Result>(null);
@@ -157,12 +160,14 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
         <div className="card text-sm text-slate-500">Choose a time slot to enable the scanner.</div>
       )}
 
-      {/* Kept at the bottom, away from the scan area, so it isn't hit by accident. */}
-      <div className="pt-4">
-        <button className="btn-secondary w-full" onClick={newTimeSlot} disabled={resetting}>
-          {resetting ? "Resetting…" : "Start New Time Slot (reset currentTrack)"}
-        </button>
-      </div>
+      {/* Admin-only (it affects every student). Kept at the bottom, away from the scan area. */}
+      {isAdmin && (
+        <div className="pt-4">
+          <button className="btn-secondary w-full" onClick={newTimeSlot} disabled={resetting}>
+            {resetting ? "Resetting…" : "Start New Time Slot (reset currentTrack)"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

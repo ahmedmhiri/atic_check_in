@@ -1,11 +1,20 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 // Scanner hub: big tap targets so volunteers on phones reach their scanner in one tap.
 export default async function ScanHubPage() {
-  const tracks = await prisma.track.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const session = await getServerSession(authOptions);
+  // A volunteer locked to one track only sees that track (plus the hotel desk).
+  const locked = session?.user?.role === "SCANNER" ? session.user.assignedTrackId : null;
+  const tracks = await prisma.track.findMany({
+    where: locked ? { id: locked } : undefined,
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <div className="mx-auto max-w-lg space-y-4">

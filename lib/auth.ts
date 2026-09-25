@@ -3,6 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+// Sessions are JWTs, so deleting an account or changing its role doesn't reach
+// an already signed-in phone by itself. Re-read the account this often.
+const RECHECK_MS = 2 * 60 * 1000;
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
@@ -25,6 +29,7 @@ export const authOptions: NextAuthOptions = {
           id: admin.id,
           name: admin.name,
           email: admin.email,
+          role: admin.role,
           assignedTrackId: admin.assignedTrackId,
         };
       },
@@ -33,15 +38,35 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.assignedTrackId = (user as any).assignedTrackId ?? null;
+        token.id = user.id;
+        token.role = user.role;
+        token.assignedTrackId = user.assignedTrackId ?? null;
+        token.checkedAt = Date.now();
+        return token;
+      }
+      // Periodic re-check (also upgrades tokens issued before roles existed).
+      if (!token.revoked && (!token.role || !token.checkedAt || Date.now() - token.checkedAt > RECHECK_MS)) {
+        const acct = token.id
+          ? await prisma.admin.findUnique({ where: { id: token.id }, select: { role: true, assignedTrackId: true } })
+          : null;
+        if (!acct) {
+          token.revoked = true;
+        } else {
+          token.role = acct.role;
+          token.assignedTrackId = acct.assignedTrackId;
+          token.checkedAt = Date.now();
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).assignedTrackId = token.assignedTrackId ?? null;
+        session.user.id = token.id;
+        // Tokens from before roles existed belong to the original admin account(s);
+        // the jwt callback upgrades them from the DB on first use.
+        session.user.role = token.role ?? "SCANNER";
+        session.user.revoked = token.revoked === true;
+        session.user.assignedTrackId = token.assignedTrackId ?? null;
       }
       return session;
     },

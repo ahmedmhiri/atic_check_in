@@ -5,11 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 
-const links = [
+const ADMIN_LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/scan", label: "Scan" },
   { href: "/import", label: "Import" },
+  { href: "/volunteers", label: "Team" },
 ];
+// Volunteers can only reach the scanners.
+const SCANNER_LINKS = [{ href: "/scan", label: "Scan" }];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -20,12 +23,14 @@ export default function Nav() {
   const { data: session } = useSession();
 
   if (pathname === "/login") return null;
+  const isAdmin = session?.user?.role === "ADMIN";
+  const links = isAdmin ? ADMIN_LINKS : SCANNER_LINKS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/80 backdrop-blur-xl">
       {/* Phones: brand + sign-out on the first row, links full-width below. */}
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-1 px-3 py-2.5 sm:px-4 sm:py-3">
-        <Link href="/" className="flex items-center gap-3" aria-label="ATIC Check-In home">
+        <Link href={isAdmin ? "/" : "/scan"} className="flex items-center gap-3" aria-label="ATIC Check-In home">
           <Image src="/atic-logo.png" alt="ATIC" width={339} height={172} priority className="h-9 w-auto" />
           <span className="hidden font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mist sm:inline">
             [ Check-In ]
@@ -49,7 +54,12 @@ export default function Nav() {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
-          {session?.user?.email && <span className="hidden font-mono text-xs text-slate-500 md:inline">{session.user.email}</span>}
+          {session?.user?.email && (
+            <span className="hidden font-mono text-xs text-slate-500 md:inline">
+              {session.user.email}
+              {!isAdmin && " · volunteer"}
+            </span>
+          )}
           <button onClick={() => signOut({ callbackUrl: "/login" })} className="btn-secondary !min-h-0 px-3.5 py-1.5 text-xs">
             Sign out
           </button>
