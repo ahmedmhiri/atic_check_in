@@ -78,6 +78,7 @@ async function deliver(mail: Mail): Promise<string | undefined> {
     try {
       const info = await getSmtp().sendMail({
         from: fromAddress(),
+        replyTo: process.env.SMTP_USER,
         to: mail.to,
         subject: mail.subject,
         html: mail.html,
@@ -150,6 +151,10 @@ function layout(body: string): string {
         <tr><td bgcolor="#f2f0ea" style="background-color:#f2f0ea;padding:24px;color:#0b0b12;font-family:${FONT};font-size:15px;line-height:1.55">
           ${body}
         </td></tr>
+        <tr><td style="padding:16px 24px 0;color:#8a8aa6;font-family:${FONT};font-size:11px;line-height:1.5">
+          You're receiving this because you registered for ATIC 2.0 (AfroTech Intelligence Congress), organised by
+          IEEE CS &middot; IIT Student Branch Chapter. Questions? Just reply to this email.
+        </td></tr>
       </table>
     </td></tr>
   </table>`;
@@ -162,7 +167,7 @@ interface StudentEmailData {
 }
 
 function eligibleTemplate({ name, attendancePct }: StudentEmailData) {
-  const subject = "🎉 Your ATIC 2.0 Certificate of Completion";
+  const subject = "Your ATIC 2.0 Certificate of Completion";
   const html = layout(`
     <h2 style="color:#2A2FE0;${H2}">Congratulations, ${escapeHtml(name)}!</h2>
     <p>Thank you for participating in <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
@@ -225,7 +230,6 @@ export async function sendQrEmail({ name, email, studentId, qrToken }: QrEmailDa
           </td></tr>
         </table>
         <div style="font-family:Courier New,monospace;font-size:13px;color:#5a5a6e;margin-top:10px">Student ID: ${escapeHtml(studentId)}</div>
-        ${qrUrl ? `<div style="margin-top:12px"><a href="${qrUrl}" style="display:inline-block;background-color:#F2A93B;color:#0b0b12;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:10px 18px;border-radius:4px">Open my QR code</a></div>` : ""}
       </td></tr>
     </table>
     <p style="margin:0 0 6px"><strong>Show this QR code:</strong></p>
@@ -233,12 +237,12 @@ export async function sendQrEmail({ name, email, studentId, qrToken }: QrEmailDa
       <li>at the hotel check-in desk when you arrive, and</li>
       <li>at the door of every workshop session you attend (attendance counts toward your certificate).</li>
     </ul>
-    <p style="margin:0 0 16px"><strong>Tips:</strong> take a screenshot of the QR code (or tap <em>Open my QR code</em> and save it) so you have it offline,
+    <p style="margin:0 0 16px"><strong>Tips:</strong> take a screenshot of the QR code so you have it offline (if it doesn't appear, tap <em>Display images</em> at the top of this email),
        and turn your screen brightness up when it's scanned. A printed copy works too.</p>
     <p style="margin:0 0 16px;color:#b45309">This code is personal — please don't share it.</p>
     <p style="margin:24px 0 0">See you there,<br/>The ATIC Team</p>
   `);
-  const text = `Hi ${name}, here is your personal check-in QR code for ATIC 2.0 (Student ID: ${studentId})${qrUrl ? `: ${qrUrl}` : "."} Show it at hotel check-in and at the door of every workshop session. Save a screenshot and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
+  const text = `Hi ${name}, here is your personal check-in QR code for ATIC 2.0 (Student ID: ${studentId}). Open this email with images turned on to see it. Show it at hotel check-in and at the door of every workshop session. Save a screenshot and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
 
   return deliver({
     to: email,
