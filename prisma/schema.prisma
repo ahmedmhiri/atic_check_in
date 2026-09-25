@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+}
+
+model Student {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  studentId      String   @unique
+  qrToken        String   @unique
+  currentTrackId String?
+  currentTrack   Track?   @relation("StudentCurrentTrack", fields: [currentTrackId], references: [id])
+  createdAt      DateTime @default(now())
+
+  hotelCheckIn   HotelCheckIn?
+  slotSelections SlotSelection[]
+  attendance     AttendanceRecord[]
+
+  @@index([currentTrackId])
+}
+
+model Track {
+  id    String @id @default(cuid())
+  name  String @unique
+
+  sessions          SessionOccurrence[]
+  slotSelections    SlotSelection[]
+  currentStudents   Student[]           @relation("StudentCurrentTrack")
+  scannerAdmins     Admin[]
+}
+
+model TimeSlot {
+  id        String   @id @default(cuid())
+  day       Int // 1 or 2
+  label     String // e.g. "Day 1 - Morning"
+  startTime DateTime
+  endTime   DateTime
+  order     Int      @default(0)
+
+  sessions       SessionOccurrence[]
+  slotSelections SlotSelection[]
+
+  @@index([day, order])
+}
+
+model SessionOccurrence {
+  id         String @id @default(cuid())
+  trackId    String
+  timeSlotId String
+  title      String
+
+  track      Track    @relation(fields: [trackId], references: [id])
+  timeSlot   TimeSlot @relation(fields: [timeSlotId], references: [id])
+  attendance AttendanceRecord[]
+
+  @@unique([trackId, timeSlotId])
+  @@index([timeSlotId])
+}
+
+model SlotSelection {
+  id         String   @id @default(cuid())
+  studentId  String
+  timeSlotId String
+  trackId    String
+  selectedAt DateTime @default(now())
+
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
+  track    Track    @relation(fields: [trackId], references: [id])
+
+  // One track choice per student per time slot (free to change next slot).
+  @@unique([studentId, timeSlotId])
+  @@index([trackId, timeSlotId])
+}
+
+model HotelCheckIn {
+  id          String   @id @default(cuid())
+  studentId   String   @unique
+  checkedInAt DateTime @default(now())
+  roomNumber  String?
+  notes       String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model AttendanceRecord {
+  id                  String           @id @default(cuid())
+  studentId           String
+  sessionOccurrenceId String
+  checkedInAt         DateTime         @default(now())
+  status              AttendanceStatus @default(PRESENT)
+
+  student           Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sessionOccurrence SessionOccurrence @relation(fields: [sessionOccurrenceId], references: [id])
+
+  // A student is only counted once per session occurrence.
+  @@unique([studentId, sessionOccurrenceId])
+  @@index([sessionOccurrenceId])
+}
+
+model Admin {
+  id             String  @id @default(cuid())
+  name           String
+  email          String  @unique
+  password       String // bcrypt hash
+  assignedTrackId String?
+  assignedTrack  Track?  @relation(fields: [assignedTrackId], references: [id])
+  createdAt      DateTime @default(now())
+}
