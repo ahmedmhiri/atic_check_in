@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QrScanner from "@/components/QrScanner";
+import ScanResult, { ScanTone } from "@/components/ScanResult";
 
 interface Session {
   id: string;
@@ -37,7 +38,7 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
 }
 
-type Result = { status: string; message: string } | null;
+type Result = { status: string; message: string; at: number } | null;
 
 export default function TrackScanPage({ params }: { params: { trackId: string } }) {
   const { trackId } = params;
@@ -90,10 +91,10 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
             sessionOccurrenceId: activeSession.id,
           }),
         });
-        const data = await res.json();
-        setResult({ status: data.status ?? "error", message: data.message ?? data.error });
+        const data = await res.json().catch(() => ({ message: `Server error (${res.status})` }));
+        setResult({ status: data.status ?? "error", message: data.message ?? data.error, at: Date.now() });
       } catch {
-        setResult({ status: "error", message: "Network error" });
+        setResult({ status: "error", message: "Network error — check your connection", at: Date.now() });
       } finally {
         setTimeout(() => setBusy(false), 1400);
       }
@@ -104,77 +105,63 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
   async function newTimeSlot() {
     if (!confirm("Start a new time slot? This frees every student to choose any track again.")) return;
     setResetting(true);
-    await fetch("/api/timeslots/reset", { method: "POST" });
-    setResetting(false);
-    alert("All students reset — currentTrack cleared.");
+    try {
+      const res = await fetch("/api/timeslots/reset", { method: "POST" });
+      alert(res.ok ? "All students reset — currentTrack cleared." : `Reset failed (${res.status})`);
+    } catch {
+      alert("Network error — reset not applied");
+    } finally {
+      setResetting(false);
+    }
   }
 
-  const color =
-    result?.status === "recorded"
-      ? "bg-green-50 text-green-800 border-green-200"
-      : result?.status === "already"
-      ? "bg-amber-50 text-amber-800 border-amber-200"
-      : "bg-red-50 text-red-800 border-red-200";
+  const tone: ScanTone =
+    result?.status === "recorded" ? "ok" : result?.status === "already" ? "warn" : "error";
 
+  // Single column on every screen: slot picker, result banner, camera. On a
+  // phone the result must sit above the camera to be visible without scrolling.
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">{trackName} — Workshop Scan</h1>
-          <p className="text-sm text-slate-500">Select the active time slot, then scan.</p>
-        </div>
+    <div className="mx-auto max-w-lg space-y-3">
+      <h1 className="text-xl font-semibold">{trackName} — Workshop Scan</h1>
 
-        <div className="card space-y-3">
-          <div>
-            <label className="label">Active Time Slot</label>
-            <select className="input" value={slotId} onChange={(e) => setSlotId(e.target.value)}>
-              <option value="">— choose a slot —</option>
-              {slots.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label} ({fmtTime(s.startTime)}){isSlotLive(s) ? " — NOW" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          {slotId && (
-            <div className="text-sm">
-              {activeSession ? (
-                <div className="space-y-1">
-                  <span className="text-slate-600">
-                    Session: <strong>{activeSession.title}</strong>
-                  </span>
-                  {selectedSlot && !slotIsLive && (
-                    <p className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">
-                      ⚠ This slot is not in progress (runs {fmtTime(selectedSlot.startTime)} –{" "}
-                      {fmtTime(selectedSlot.endTime)}). Scans will be recorded against it anyway — double-check
-                      you picked the right slot.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <span className="text-red-600">No session for this track in the selected slot.</span>
-              )}
-            </div>
-          )}
-          <button className="btn-secondary" onClick={newTimeSlot} disabled={resetting}>
-            {resetting ? "Resetting…" : "Start New Time Slot (reset currentTrack)"}
-          </button>
-        </div>
-
-        {slotId && activeSession ? (
-          <QrScanner onScan={handleScan} paused={busy} />
-        ) : (
-          <div className="card text-sm text-slate-400">Choose a time slot to enable the scanner.</div>
+      <div className="card space-y-2">
+        <label className="label" htmlFor="slot">
+          Active Time Slot
+        </label>
+        <select id="slot" className="input" value={slotId} onChange={(e) => setSlotId(e.target.value)}>
+          <option value="">— choose a slot —</option>
+          {slots.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label} ({fmtTime(s.startTime)}){isSlotLive(s) ? " — NOW" : ""}
+            </option>
+          ))}
+        </select>
+        {slotId && !activeSession && (
+          <p className="text-sm text-red-600">No session for this track in the selected slot.</p>
+        )}
+        {activeSession && selectedSlot && !slotIsLive && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-sm text-amber-800">
+            ⚠ This slot is not in progress (runs {fmtTime(selectedSlot.startTime)} –{" "}
+            {fmtTime(selectedSlot.endTime)}). Scans will be recorded against it anyway — double-check you picked
+            the right slot.
+          </p>
         )}
       </div>
 
-      <div>
-        {result && (
-          <div className={`rounded-lg border p-5 ${color}`}>
-            <div className="text-xs uppercase tracking-wide opacity-70">{result.status}</div>
-            <div className="mt-1 text-lg font-medium">{result.message}</div>
-          </div>
-        )}
+      {slotId && activeSession ? (
+        <>
+          <ScanResult result={result} tone={tone} idleText={`Scanning for ${activeSession.title}`} />
+          <QrScanner onScan={handleScan} paused={busy} />
+        </>
+      ) : (
+        <div className="card text-sm text-slate-400">Choose a time slot to enable the scanner.</div>
+      )}
+
+      {/* Kept at the bottom, away from the scan area, so it isn't hit by accident. */}
+      <div className="pt-4">
+        <button className="btn-secondary w-full" onClick={newTimeSlot} disabled={resetting}>
+          {resetting ? "Resetting…" : "Start New Time Slot (reset currentTrack)"}
+        </button>
       </div>
     </div>
   );

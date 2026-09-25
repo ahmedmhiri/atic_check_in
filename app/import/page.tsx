@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import EmailBatchCard from "@/components/EmailBatchCard";
 
 interface Summary {
   total: number;
@@ -24,11 +25,16 @@ export default function ImportPage() {
     setSummary(null);
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/import", { method: "POST", body: fd });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) setError(data.error ?? "Import failed");
-    else setSummary(data);
+    try {
+      const res = await fetch("/api/import", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+      if (!res.ok) setError(data.error ?? "Import failed");
+      else setSummary(data);
+    } catch {
+      setError("Network error — check your connection and try again");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -42,19 +48,20 @@ export default function ImportPage() {
       </div>
 
       <form onSubmit={upload} className="card flex flex-wrap items-end gap-3">
-        <div className="grow">
+        <div className="w-full grow sm:w-auto">
           <label className="label">File</label>
           <input
             type="file"
-            accept=".xlsx,.xls,.csv"
+            // MIME types too: some Android file pickers grey out files matched by extension only.
+            accept=".xlsx,.xls,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="input"
           />
         </div>
-        <button className="btn-primary" disabled={!file || loading}>
+        <button className="btn-primary w-full sm:w-auto" disabled={!file || loading}>
           {loading ? "Importing…" : "Import"}
         </button>
-        <a href="/api/qr" className="btn-secondary">
+        <a href="/api/qr" className="btn-secondary w-full sm:w-auto">
           Download QR ZIP
         </a>
       </form>
@@ -63,7 +70,7 @@ export default function ImportPage() {
 
       {summary && (
         <div className="card space-y-4">
-          <div className="grid grid-cols-4 gap-3 text-center">
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 sm:gap-3">
             <Tile label="Total rows" value={summary.total} tone="text-slate-700" />
             <Tile label="Created" value={summary.created} tone="text-green-600" />
             <Tile label="Skipped" value={summary.skipped} tone="text-amber-600" />
@@ -106,6 +113,14 @@ export default function ImportPage() {
           </div>
         </div>
       )}
+
+      <EmailBatchCard
+        endpoint="/api/qr-email"
+        title="Email QR Codes to Students"
+        description="Sends each student their personal check-in QR code. Only students who haven't received it yet are emailed — safe to run again after importing more."
+        buttonLabel="Email QR Codes"
+        confirmText="Email every student their check-in QR code? This sends real emails."
+      />
     </div>
   );
 }

@@ -36,7 +36,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[80vh] items-center justify-center">
       <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
         <div>
           <h1 className="text-lg font-semibold text-teal-700">Admin Sign In</h1>
@@ -44,13 +44,25 @@ function LoginForm() {
         </div>
         <div>
           <label className="label">Email</label>
-          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input
+            className="input"
+            type="email"
+            inputMode="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
         <div>
           <label className="label">Password</label>
           <input
             className="input"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

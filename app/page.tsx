@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Overview</h1>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Card label="Imported" value={totalStudents} />
         <Card label="Hotel Checked-In" value={hotelCheckedIn} tone="text-green-600" />
         <Card label="Not Arrived" value={totalStudents - hotelCheckedIn} tone="text-amber-600" />
@@ -65,12 +65,12 @@ export default async function DashboardPage() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
               <tr>
-                <th className="px-3 py-2">Student ID</th>
+                <th className="hidden px-3 py-2 sm:table-cell">Student ID</th>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Hotel</th>
-                <th className="px-3 py-2">Current Track</th>
+                <th className="hidden px-3 py-2 md:table-cell">Current Track</th>
                 <th className="px-3 py-2">Attended</th>
-                <th className="px-3 py-2"></th>
+                <th className="hidden px-3 py-2 sm:table-cell"></th>
               </tr>
             </thead>
             <tbody>
@@ -79,8 +79,13 @@ export default async function DashboardPage() {
                 const pct = totalSlots ? Math.round((count / totalSlots) * 100) : 0;
                 return (
                   <tr key={s.id} className="border-t border-slate-100">
-                    <td className="px-3 py-1.5 font-mono text-xs">{s.studentId}</td>
-                    <td className="px-3 py-1.5">{s.name}</td>
+                    <td className="hidden px-3 py-1.5 font-mono text-xs sm:table-cell">{s.studentId}</td>
+                    <td className="px-3 py-2 sm:py-1.5">
+                      <Link href={`/students/${s.id}`} className="text-slate-900 underline-offset-2 hover:underline">
+                        {s.name}
+                      </Link>
+                      <div className="font-mono text-[11px] text-slate-400 sm:hidden">{s.studentId}</div>
+                    </td>
                     <td className="px-3 py-1.5">
                       {s.hotelCheckIn ? (
                         <span className="badge bg-green-100 text-green-700">in</span>
@@ -88,11 +93,11 @@ export default async function DashboardPage() {
                         <span className="badge bg-slate-100 text-slate-500">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-slate-600">{s.currentTrack?.name ?? "—"}</td>
-                    <td className="px-3 py-1.5">
-                      {count}/{totalSlots} ({pct}%)
+                    <td className="hidden px-3 py-1.5 text-slate-600 md:table-cell">{s.currentTrack?.name ?? "—"}</td>
+                    <td className="whitespace-nowrap px-3 py-1.5">
+                      {count}/{totalSlots} <span className="text-slate-400">({pct}%)</span>
                     </td>
-                    <td className="px-3 py-1.5 text-right">
+                    <td className="hidden px-3 py-1.5 text-right sm:table-cell">
                       <Link href={`/students/${s.id}`} className="text-teal-600 hover:underline">
                         Details
                       </Link>

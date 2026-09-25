@@ -46,10 +46,11 @@ export default function StudentOverride({
 
   return (
     <div className="card space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-slate-500">Manual Override</h2>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm">
           <input
+            className="h-5 w-5 accent-teal-600"
             type="checkbox"
             checked={hotelCheckedIn}
             disabled={busy}
@@ -78,7 +79,7 @@ export default function StudentOverride({
                   <td className="px-3 py-2">{r.slotLabel}</td>
                   <td className="px-3 py-2">
                     <select
-                      className="input"
+                      className="input min-w-[8rem]"
                       value={r.selectedTrackId ?? ""}
                       disabled={busy}
                       onChange={(e) => {
@@ -112,7 +113,7 @@ export default function StudentOverride({
                       <div className="flex items-center gap-2">
                         <span className="badge bg-green-100 text-green-700">{r.attendedStatus}</span>
                         <button
-                          className="text-xs text-red-600 hover:underline"
+                          className="rounded-md border border-red-200 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
                           disabled={busy}
                           onClick={() =>
                             call({ action: "deleteAttendance", attendanceRecordId: r.attendanceRecordId })
@@ -123,7 +124,7 @@ export default function StudentOverride({
                       </div>
                     ) : targetOcc ? (
                       <button
-                        className="text-xs text-teal-600 hover:underline"
+                        className="whitespace-nowrap rounded-md border border-teal-200 px-3 py-2 text-xs text-teal-700 hover:bg-teal-50"
                         disabled={busy}
                         onClick={() =>
                           call({

@@ -24,6 +24,8 @@ model Student {
   createdAt      DateTime @default(now())
   // Set once the finalize result email is sent (also used as a claim while sending).
   resultEmailSentAt DateTime?
+  // Set once the student has been emailed their QR code.
+  qrEmailSentAt     DateTime?
 
   hotelCheckIn   HotelCheckIn?
   slotSelections SlotSelection[]

@@ -10,6 +10,21 @@ interface Props {
 
 const REGION_ID = "qr-reader-region";
 
+const IN_APP_HINT =
+  "If you opened this link from WhatsApp, Instagram, Messenger or similar, open it in Chrome or Safari instead.";
+
+/** Turn getUserMedia / html5-qrcode failures into something a volunteer can act on. */
+function cameraErrorMessage(e: unknown): string {
+  const raw = `${(e as any)?.name ?? ""} ${(e as any)?.message ?? e ?? ""}`;
+  if (/NotAllowed|Permission|denied/i.test(raw))
+    return "Camera permission was denied. Allow camera access for this site in your browser settings, then reload the page.";
+  if (/NotFound|DevicesNotFound|no camera/i.test(raw)) return "No camera found on this device.";
+  if (/NotReadable|TrackStart|Could not start video source/i.test(raw))
+    return "The camera is being used by another app. Close other camera apps and reload the page.";
+  if (/Overconstrained/i.test(raw)) return "This camera isn't supported. Try another browser.";
+  return `Could not start the camera. ${IN_APP_HINT}`;
+}
+
 export default function QrScanner({ onScan, paused }: Props) {
   const scannerRef = useRef<any>(null);
   const lastScanRef = useRef<{ text: string; at: number }>({ text: "", at: 0 });
@@ -25,17 +40,78 @@ export default function QrScanner({ onScan, paused }: Props) {
   }, [onScan]);
 
   useEffect(() => {
-    let cancelled = false;
+    let disposed = false;
+    let scanner: any = null;
+    let wakeLock: any = null;
+
+    // html5-qrcode throws if start/stop overlap, so run them strictly in order.
+    let queue: Promise<void> = Promise.resolve();
+    const enqueue = (fn: () => Promise<void>) => {
+      queue = queue.then(fn, fn);
+    };
+
+    async function acquireWakeLock() {
+      // Keep the screen on while scanning (Android Chrome, iOS 16.4+).
+      try {
+        if ("wakeLock" in navigator && document.visibilityState === "visible") {
+          wakeLock = await (navigator as any).wakeLock.request("screen");
+        }
+      } catch {
+        /* not supported / not allowed — harmless */
+      }
+    }
+
+    async function stop() {
+      const s = scanner;
+      scanner = null;
+      scannerRef.current = null;
+      setRunning(false);
+      wakeLock?.release?.().catch(() => {});
+      wakeLock = null;
+      if (!s) return;
+      try {
+        await s.stop();
+      } catch {
+        /* already stopped */
+      }
+      try {
+        s.clear();
+      } catch {
+        /* ignore */
+      }
+    }
 
     async function start() {
+      if (disposed || scanner || document.hidden) return;
+      if (!window.isSecureContext) {
+        setError("The camera only works over HTTPS. Open the https:// address of this site.");
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError(`This browser can't access the camera. ${IN_APP_HINT} You can still type tokens below.`);
+        return;
+      }
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (cancelled) return;
-        const scanner = new Html5Qrcode(REGION_ID, false);
-        scannerRef.current = scanner;
-        await scanner.start(
+        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
+        if (disposed) return;
+        const s = new Html5Qrcode(REGION_ID, {
+          verbose: false,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          // Native BarcodeDetector (most Android phones) is much faster than the JS decoder.
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        });
+        scanner = s;
+        scannerRef.current = s;
+        await s.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          {
+            fps: 10,
+            // Scan box scales with the screen instead of a fixed 250px.
+            qrbox: (w: number, h: number) => {
+              const size = Math.max(150, Math.floor(Math.min(w, h) * 0.7));
+              return { width: size, height: size };
+            },
+          },
           (decodedText: string) => {
             const now = Date.now();
             // debounce repeat reads of the same code within 2.5s
@@ -45,26 +121,51 @@ export default function QrScanner({ onScan, paused }: Props) {
           },
           () => {}
         );
-        if (cancelled) {
-          // Unmounted while the camera was starting — cleanup's stop() may have
-          // failed mid-transition, so release the stream here.
-          scanner.stop().then(() => scanner.clear()).catch(() => {});
+        if (disposed || document.hidden) {
+          await stop();
           return;
         }
+        setError("");
         setRunning(true);
-      } catch (e: any) {
-        setError(e?.message ?? "Could not start camera. Use manual entry below.");
+        acquireWakeLock();
+      } catch (e) {
+        scanner = null;
+        scannerRef.current = null;
+        setRunning(false);
+        setError(cameraErrorMessage(e));
       }
     }
 
-    start();
+    // Phones kill the camera stream when the screen locks or the app is
+    // switched; iOS then shows a frozen/black video. Stop on hide, restart on show.
+    function onVisibility() {
+      if (document.hidden) enqueue(stop);
+      else enqueue(start);
+    }
+
+    // The library sizes the video and scan box in pixels at start, so a
+    // rotation (width change) needs a restart to stay aligned.
+    let lastWidth = window.innerWidth;
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    function onResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (window.innerWidth === lastWidth) return; // ignore mobile URL-bar height changes
+        lastWidth = window.innerWidth;
+        enqueue(stop);
+        enqueue(start);
+      }, 400);
+    }
+
+    enqueue(start);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("resize", onResize);
     return () => {
-      cancelled = true;
-      const s = scannerRef.current;
-      if (s) {
-        s.stop().then(() => s.clear()).catch(() => {});
-        scannerRef.current = null;
-      }
+      disposed = true;
+      clearTimeout(resizeTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("resize", onResize);
+      enqueue(stop);
     };
   }, []);
 
@@ -82,8 +183,11 @@ export default function QrScanner({ onScan, paused }: Props) {
 
   return (
     <div className="space-y-3">
-      <div id={REGION_ID} className="overflow-hidden rounded-lg border border-slate-300 bg-black" />
-      {error && <p className="text-sm text-amber-600">{error}</p>}
+      <div
+        id={REGION_ID}
+        className="min-h-[12rem] w-full overflow-hidden rounded-lg border border-slate-300 bg-black"
+      />
+      {error && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{error}</p>}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -95,10 +199,15 @@ export default function QrScanner({ onScan, paused }: Props) {
         className="flex gap-2"
       >
         <input
-          className="input"
+          className="input font-mono"
           placeholder="Manual token entry (fallback)"
           value={manual}
           onChange={(e) => setManual(e.target.value)}
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          enterKeyHint="go"
         />
         <button className="btn-secondary shrink-0">Submit</button>
       </form>

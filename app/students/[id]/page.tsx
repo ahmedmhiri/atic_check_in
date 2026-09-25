@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StudentOverride, { SlotRow } from "@/components/StudentOverride";
+import ResendQrButton from "@/components/ResendQrButton";
 
 export const dynamic = "force-dynamic";
 
@@ -65,11 +66,11 @@ export default async function StudentPage({ params }: { params: { id: string } }
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">{student.name}</h1>
-          <p className="text-sm text-slate-500">
+          <p className="break-all text-sm text-slate-500">
             {student.email} · <span className="font-mono">{student.studentId}</span>
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:gap-4">
           <Metric label="Attendance" value={`${pct}%`} sub={`${attendedCount}/${totalSlots}`} />
           <Metric
             label="Hotel"
@@ -82,6 +83,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
 
       <div className="card">
         <h2 className="mb-3 text-sm font-semibold text-slate-500">Slot-by-Slot History</h2>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-slate-500">
             <tr>
@@ -109,7 +111,14 @@ export default async function StudentPage({ params }: { params: { id: string } }
             })}
           </tbody>
         </table>
+        </div>
       </div>
+
+      <ResendQrButton
+        id={student.id}
+        email={student.email}
+        sentAt={student.qrEmailSentAt ? student.qrEmailSentAt.toISOString() : null}
+      />
 
       <StudentOverride studentId={student.id} hotelCheckedIn={!!student.hotelCheckIn} rows={rows} />
     </div>
@@ -118,7 +127,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
 
 function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="card min-w-[7rem] text-center">
+    <div className="card text-center sm:min-w-[7rem]">
       <div className="text-2xl font-bold text-teal-700">{value}</div>
       <div className="text-xs font-medium text-slate-500">{label}</div>
       {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
