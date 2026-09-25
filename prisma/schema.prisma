@@ -22,6 +22,8 @@ model Student {
   currentTrackId String?
   currentTrack   Track?   @relation("StudentCurrentTrack", fields: [currentTrackId], references: [id])
   createdAt      DateTime @default(now())
+  // Set once the finalize result email is sent (also used as a claim while sending).
+  resultEmailSentAt DateTime?
 
   hotelCheckIn   HotelCheckIn?
   slotSelections SlotSelection[]

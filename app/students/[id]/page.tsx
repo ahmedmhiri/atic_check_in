@@ -26,7 +26,8 @@ export default async function StudentPage({ params }: { params: { id: string } }
   if (!student) notFound();
 
   const totalSlots = slots.length;
-  const attendedCount = student.attendance.length;
+  // Distinct slots attended (never more than one per slot).
+  const attendedCount = new Set(student.attendance.map((a) => a.sessionOccurrence.timeSlotId)).size;
   const pct = totalSlots ? Math.round((attendedCount / totalSlots) * 100) : 0;
 
   // Map: timeSlotId -> selected trackId

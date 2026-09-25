@@ -13,7 +13,28 @@ interface Slot {
   id: string;
   day: number;
   label: string;
+  startTime: string;
+  endTime: string;
   sessions: Session[];
+}
+
+// Slots open for scanning this many minutes before their start time.
+const EARLY_OPEN_MINUTES = 30;
+
+function slotWindow(slot: Slot) {
+  return {
+    opens: new Date(slot.startTime).getTime() - EARLY_OPEN_MINUTES * 60_000,
+    ends: new Date(slot.endTime).getTime(),
+  };
+}
+
+function isSlotLive(slot: Slot, now = Date.now()) {
+  const { opens, ends } = slotWindow(slot);
+  return now >= opens && now <= ends;
+}
+
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 type Result = { status: string; message: string } | null;
@@ -29,8 +50,17 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
   useEffect(() => {
     fetch("/api/timeslots", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setSlots(d.slots ?? []));
+      .then((d) => {
+        const list: Slot[] = d.slots ?? [];
+        setSlots(list);
+        // Pre-select the slot that is running right now (if any).
+        const live = list.find((s) => isSlotLive(s));
+        if (live) setSlotId((cur) => cur || live.id);
+      });
   }, []);
+
+  const selectedSlot = slots.find((s) => s.id === slotId) ?? null;
+  const slotIsLive = selectedSlot ? isSlotLive(selectedSlot) : false;
 
   // The session occurrence for THIS track in the selected slot.
   const activeSession = useMemo(() => {
@@ -101,7 +131,7 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
               <option value="">— choose a slot —</option>
               {slots.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.label}
+                  {s.label} ({fmtTime(s.startTime)}){isSlotLive(s) ? " — NOW" : ""}
                 </option>
               ))}
             </select>
@@ -109,9 +139,18 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
           {slotId && (
             <div className="text-sm">
               {activeSession ? (
-                <span className="text-slate-600">
-                  Session: <strong>{activeSession.title}</strong>
-                </span>
+                <div className="space-y-1">
+                  <span className="text-slate-600">
+                    Session: <strong>{activeSession.title}</strong>
+                  </span>
+                  {selectedSlot && !slotIsLive && (
+                    <p className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-amber-800">
+                      ⚠ This slot is not in progress (runs {fmtTime(selectedSlot.startTime)} –{" "}
+                      {fmtTime(selectedSlot.endTime)}). Scans will be recorded against it anyway — double-check
+                      you picked the right slot.
+                    </p>
+                  )}
+                </div>
               ) : (
                 <span className="text-red-600">No session for this track in the selected slot.</span>
               )}

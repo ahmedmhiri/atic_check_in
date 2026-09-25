@@ -24,15 +24,60 @@ export async function POST(req: NextRequest) {
   try {
     switch (action) {
       case "reassignSlot": {
-        const { studentId, timeSlotId, trackId } = body;
-        if (!studentId || !timeSlotId || !trackId)
+        // trackId "" / null clears the slot (no track, no attendance).
+        const { studentId, timeSlotId } = body;
+        const trackId: string | null = body.trackId || null;
+        if (!studentId || !timeSlotId)
           return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-        const sel = await prisma.slotSelection.upsert({
-          where: { studentId_timeSlotId: { studentId, timeSlotId } },
-          update: { trackId, selectedAt: new Date() },
-          create: { studentId, timeSlotId, trackId },
+
+        const newOcc = trackId
+          ? await prisma.sessionOccurrence.findUnique({
+              where: { trackId_timeSlotId: { trackId, timeSlotId } },
+            })
+          : null;
+        if (trackId && !newOcc)
+          return NextResponse.json({ error: "No session for that track in this slot" }, { status: 400 });
+
+        await prisma.$transaction(async (tx) => {
+          // Attendance in this slot on any other track must follow the student,
+          // otherwise the slot ends up with two records (or one on the wrong track).
+          const stale = await tx.attendanceRecord.findMany({
+            where: {
+              studentId,
+              sessionOccurrence: { timeSlotId },
+              ...(newOcc ? { sessionOccurrenceId: { not: newOcc.id } } : {}),
+            },
+            orderBy: { checkedInAt: "asc" },
+          });
+          if (stale.length) {
+            await tx.attendanceRecord.deleteMany({ where: { id: { in: stale.map((r) => r.id) } } });
+          }
+
+          if (!trackId || !newOcc) {
+            await tx.slotSelection.deleteMany({ where: { studentId, timeSlotId } });
+            return;
+          }
+
+          await tx.slotSelection.upsert({
+            where: { studentId_timeSlotId: { studentId, timeSlotId } },
+            update: { trackId, selectedAt: new Date() },
+            create: { studentId, timeSlotId, trackId },
+          });
+          if (stale.length) {
+            const moved = stale[0];
+            await tx.attendanceRecord.upsert({
+              where: { studentId_sessionOccurrenceId: { studentId, sessionOccurrenceId: newOcc.id } },
+              update: {},
+              create: {
+                studentId,
+                sessionOccurrenceId: newOcc.id,
+                status: moved.status,
+                checkedInAt: moved.checkedInAt,
+              },
+            });
+          }
         });
-        return NextResponse.json({ status: "ok", selection: sel });
+        return NextResponse.json({ status: "ok" });
       }
 
       case "addAttendance": {
@@ -40,6 +85,20 @@ export async function POST(req: NextRequest) {
         const status = body.status === "LATE" ? "LATE" : "PRESENT";
         if (!studentId || !sessionOccurrenceId)
           return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+        const occ = await prisma.sessionOccurrence.findUnique({ where: { id: sessionOccurrenceId } });
+        if (!occ) return NextResponse.json({ error: "Unknown session" }, { status: 400 });
+        const clash = await prisma.attendanceRecord.findFirst({
+          where: {
+            studentId,
+            sessionOccurrence: { timeSlotId: occ.timeSlotId },
+            sessionOccurrenceId: { not: sessionOccurrenceId },
+          },
+        });
+        if (clash)
+          return NextResponse.json(
+            { error: "Student already has attendance on another track in this slot" },
+            { status: 409 }
+          );
         const rec = await prisma.attendanceRecord.upsert({
           where: { studentId_sessionOccurrenceId: { studentId, sessionOccurrenceId } },
           update: { status },

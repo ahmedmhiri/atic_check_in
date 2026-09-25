@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 interface LogRow {
+  id: string;
   studentId: string;
   name: string;
   attendancePct: number;
@@ -16,15 +17,49 @@ export default function FinalizeButton() {
   const [summary, setSummary] = useState<any>(null);
   const [log, setLog] = useState<LogRow[]>([]);
 
+  // The server sends one time-boxed batch per call; keep calling until done.
+  // Students already emailed are skipped server-side, so re-running is safe.
   async function run() {
-    if (!confirm("Finalize the event and email ALL students their results? This sends real emails.")) return;
+    if (
+      !confirm(
+        "Finalize the event and email students their results? This sends real emails. " +
+          "Students who were already emailed are skipped."
+      )
+    )
+      return;
     setLoading(true);
     setSummary(null);
-    const res = await fetch("/api/finalize", { method: "POST" });
-    const data = await res.json();
+    setLog([]);
+
+    const all: LogRow[] = [];
+    const failedIds: string[] = [];
+    let last: any = null;
+    try {
+      while (true) {
+        const res = await fetch("/api/finalize", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ skipIds: failedIds }),
+        });
+        const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        if (!res.ok || !data.summary) {
+          last = { error: data.error ?? `Server error (${res.status})` };
+          break;
+        }
+        const batch: LogRow[] = data.log ?? [];
+        all.push(...batch);
+        failedIds.push(...batch.filter((l) => l.status === "failed").map((l) => l.id));
+        last = data.summary;
+        setLog([...all]);
+        setSummary({ ...totals(all), remaining: last.remaining, alreadySent: last.alreadySent, running: true });
+        if (last.remaining === 0 || batch.length === 0) break;
+      }
+    } catch {
+      last = { error: "Network error — re-run Finalize to continue (already-emailed students are skipped)." };
+    }
+
     setLoading(false);
-    setSummary(data.summary ?? { error: data.error });
-    setLog(data.log ?? []);
+    setSummary(last?.error ? { ...totals(all), error: last.error } : { ...last, ...totals(all), running: false });
   }
 
   return (
@@ -41,14 +76,18 @@ export default function FinalizeButton() {
 
       {summary && (
         <div className="rounded-md bg-slate-50 p-3 text-sm">
-          {summary.error ? (
-            <span className="text-red-600">{summary.error}</span>
-          ) : (
-            <span>
-              Sent <b className="text-green-600">{summary.sent}</b>, failed{" "}
-              <b className="text-red-600">{summary.failed}</b> · eligible {summary.eligible}, not eligible{" "}
-              {summary.notEligible}
-            </span>
+          {summary.error && <div className="text-red-600">{summary.error}</div>}
+          <span>
+            Sent <b className="text-green-600">{summary.sent}</b>, failed{" "}
+            <b className="text-red-600">{summary.failed}</b> · eligible {summary.eligible}, not eligible{" "}
+            {summary.notEligible}
+            {summary.running && <> · {summary.remaining} remaining…</>}
+            {!summary.running && summary.alreadySent !== undefined && (
+              <> · {summary.alreadySent} students emailed in total</>
+            )}
+          </span>
+          {!summary.running && summary.failed > 0 && (
+            <div className="text-xs text-slate-500">Run Finalize again to retry the failed ones.</div>
           )}
         </div>
       )}
@@ -66,7 +105,7 @@ export default function FinalizeButton() {
             </thead>
             <tbody>
               {log.map((l) => (
-                <tr key={l.studentId} className="border-t border-slate-100">
+                <tr key={l.id} className="border-t border-slate-100">
                   <td className="px-3 py-1.5">
                     {l.name} <span className="text-slate-400">({l.studentId})</span>
                   </td>
@@ -89,4 +128,13 @@ export default function FinalizeButton() {
       )}
     </div>
   );
+}
+
+function totals(rows: LogRow[]) {
+  return {
+    sent: rows.filter((l) => l.status === "sent").length,
+    failed: rows.filter((l) => l.status === "failed").length,
+    eligible: rows.filter((l) => l.eligible).length,
+    notEligible: rows.filter((l) => !l.eligible).length,
+  };
 }

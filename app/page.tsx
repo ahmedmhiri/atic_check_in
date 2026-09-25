@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import FinalizeButton from "@/components/FinalizeButton";
+import { attendedSlotCounts } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [totalStudents, hotelCheckedIn, totalSlots, tracks, students] = await Promise.all([
+  const [totalStudents, hotelCheckedIn, totalSlots, tracks, students, attended] = await Promise.all([
     prisma.student.count(),
     prisma.hotelCheckIn.count(),
     prisma.timeSlot.count(),
@@ -21,9 +22,9 @@ export default async function DashboardPage() {
         studentId: true,
         hotelCheckIn: { select: { checkedInAt: true } },
         currentTrack: { select: { name: true } },
-        _count: { select: { attendance: true } },
       },
     }),
+    attendedSlotCounts(),
   ]);
 
   return (
@@ -74,7 +75,8 @@ export default async function DashboardPage() {
             </thead>
             <tbody>
               {students.map((s) => {
-                const pct = totalSlots ? Math.round((s._count.attendance / totalSlots) * 100) : 0;
+                const count = attended.get(s.id) ?? 0;
+                const pct = totalSlots ? Math.round((count / totalSlots) * 100) : 0;
                 return (
                   <tr key={s.id} className="border-t border-slate-100">
                     <td className="px-3 py-1.5 font-mono text-xs">{s.studentId}</td>
@@ -88,7 +90,7 @@ export default async function DashboardPage() {
                     </td>
                     <td className="px-3 py-1.5 text-slate-600">{s.currentTrack?.name ?? "—"}</td>
                     <td className="px-3 py-1.5">
-                      {s._count.attendance}/{totalSlots} ({pct}%)
+                      {count}/{totalSlots} ({pct}%)
                     </td>
                     <td className="px-3 py-1.5 text-right">
                       <Link href={`/students/${s.id}`} className="text-teal-600 hover:underline">

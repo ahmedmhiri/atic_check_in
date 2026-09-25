@@ -17,6 +17,13 @@ export default function QrScanner({ onScan, paused }: Props) {
   const [manual, setManual] = useState("");
   const [running, setRunning] = useState(false);
 
+  // Parents recreate onScan whenever their state changes (e.g. `busy`).
+  // Read it through a ref so the camera is started once, not on every scan.
+  const onScanRef = useRef(onScan);
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -34,11 +41,17 @@ export default function QrScanner({ onScan, paused }: Props) {
             // debounce repeat reads of the same code within 2.5s
             if (decodedText === lastScanRef.current.text && now - lastScanRef.current.at < 2500) return;
             lastScanRef.current = { text: decodedText, at: now };
-            onScan(decodedText.trim());
+            onScanRef.current(decodedText.trim());
           },
           () => {}
         );
-        if (!cancelled) setRunning(true);
+        if (cancelled) {
+          // Unmounted while the camera was starting — cleanup's stop() may have
+          // failed mid-transition, so release the stream here.
+          scanner.stop().then(() => scanner.clear()).catch(() => {});
+          return;
+        }
+        setRunning(true);
       } catch (e: any) {
         setError(e?.message ?? "Could not start camera. Use manual entry below.");
       }
@@ -53,7 +66,7 @@ export default function QrScanner({ onScan, paused }: Props) {
         scannerRef.current = null;
       }
     };
-  }, [onScan]);
+  }, []);
 
   // Pause/resume the live camera when result is shown.
   useEffect(() => {

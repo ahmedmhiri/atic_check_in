@@ -32,7 +32,9 @@ Open http://localhost:3000 → sign in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PAS
    - Re-scan same session → "already scanned". Scan at a different track same slot → rejected.
    - **Start New Time Slot** button resets every `currentTrackId` to null (students free to re-choose).
 4. **Dashboard** (`/`): totals, hotel counts, live per-track occupancy, per-student drill-down (`/students/[id]`) with slot-by-slot history + manual override.
-5. **Finalize** (dashboard button → `/api/finalize`): attendance % = attended / total time slots. ≥ threshold → certificate email, else not-eligible notice. Rate-limited (~1.6/s) with retry + per-student log.
+5. **Finalize** (dashboard button → `/api/finalize`): attendance % = distinct slots attended / total time slots. ≥ threshold → certificate email, else not-eligible notice. Rate-limited (~1.6/s) with retry + per-student log. Sends in ~40s batches (the button loops until done); `Student.resultEmailSentAt` marks who was emailed, so re-running only emails students not yet reached (and retries earlier failures). To re-send to someone, clear their `resultEmailSentAt` in Prisma Studio.
+
+**Time slots:** set `EVENT_DAY1_DATE` + `EVENT_UTC_OFFSET` in `.env` and run `npm run db:seed` — it (re)writes slot start/end times, which drive PRESENT vs LATE and the scanner's "current slot" pre-selection.
 
 ## API
 - `POST /api/import` — spreadsheet import

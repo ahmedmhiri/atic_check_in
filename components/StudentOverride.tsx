@@ -26,13 +26,22 @@ export default function StudentOverride({
 
   async function call(body: any) {
     setBusy(true);
-    await fetch("/api/override", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    setBusy(false);
-    router.refresh();
+    try {
+      const res = await fetch("/api/override", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? `Override failed (${res.status})`);
+      }
+    } catch {
+      alert("Network error — override not saved");
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
   }
 
   return (
@@ -72,14 +81,23 @@ export default function StudentOverride({
                       className="input"
                       value={r.selectedTrackId ?? ""}
                       disabled={busy}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        if (
+                          attended &&
+                          !confirm(
+                            e.target.value
+                              ? "Move this slot's attendance to the new track?"
+                              : "Clear the track AND remove attendance for this slot?"
+                          )
+                        )
+                          return;
                         call({
                           action: "reassignSlot",
                           studentId,
                           timeSlotId: r.slotId,
                           trackId: e.target.value,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <option value="">— none —</option>
                       {r.sessions.map((s) => (
