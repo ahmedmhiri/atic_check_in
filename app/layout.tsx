@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   description: "Admin-only attendance system for the 2-day workshop event",
 };
 
+// This app is entirely behind admin auth and reads the live DB — nothing
+// should be statically pre-rendered at build time. Forcing dynamic rendering
+// also avoids evaluating client auth code (NextAuth) during the build.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
