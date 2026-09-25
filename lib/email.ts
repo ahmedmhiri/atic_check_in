@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import nodemailer, { type Transporter } from "nodemailer";
 import { eligibilityThreshold } from "@/lib/config";
+import { qrPngBuffer } from "@/lib/qr";
 
 // ---- Provider selection ----
 // SMTP (e.g. a Gmail account + App Password, ~500 emails/day) when SMTP_HOST is
@@ -123,27 +124,35 @@ async function deliver(mail: Mail): Promise<string | undefined> {
 }
 
 // ---- Branded email layout (ATIC colours) ----
-// Navy header with the logo over a white card: dark headers read well in every
-// client, and a white body keeps text legible in Outlook/Gmail light & dark modes.
-function logoUrl(): string | null {
+// Built with tables + bgcolor attributes: Gmail's phone app drops CSS
+// backgrounds on <div>s, which left the white logo on a white background.
+function publicBaseUrl(): string | null {
   const base = process.env.NEXTAUTH_URL?.replace(/\/+$/, "");
-  return base && /^https:\/\//.test(base) ? `${base}/atic-logo.png` : null;
+  return base && /^https:\/\//.test(base) ? base : null;
 }
 
+const FONT = "Montserrat,Arial,Helvetica,sans-serif";
+const H2 = "margin:0 0 12px;font-family:Arial Black,Arial,sans-serif;font-size:22px;line-height:1.2;text-transform:uppercase;letter-spacing:.5px";
+
 function layout(body: string): string {
-  const logo = logoUrl();
+  const base = publicBaseUrl();
+  const logo = base
+    ? `<img src="${base}/atic-logo.png" alt="ATIC" width="95" height="48" style="display:block;height:48px;width:auto;border:0" />`
+    : `<span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:1px">ATIC</span>`;
   return `
-  <div style="background:#0b0b12;padding:24px 12px;font-family:Montserrat,Arial,Helvetica,sans-serif">
-    <div style="max-width:560px;margin:0 auto;background:#f2f0ea;border-radius:8px;overflow:hidden">
-      <div style="background:#0b0b12;padding:22px 24px;border-bottom:4px solid #F2A93B">
-        ${logo ? `<img src="${logo}" alt="ATIC" height="48" style="height:48px;width:auto;display:block" />` : `<div style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:1px">ATIC</div>`}
-        <div style="color:#c8c8d8;font-family:Courier New,monospace;font-size:11px;letter-spacing:2px;margin-top:14px;text-transform:uppercase">[ 2nd edition ] &middot; AfroTech Intelligence Congress</div>
-      </div>
-      <div style="padding:24px;color:#0b0b12;line-height:1.55">
-        ${body}
-      </div>
-    </div>
-  </div>`;
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0b0b12" style="background-color:#0b0b12">
+    <tr><td align="center" style="padding:24px 12px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-collapse:separate">
+        <tr><td bgcolor="#0b0b12" style="background-color:#0b0b12;padding:22px 24px;border-bottom:4px solid #F2A93B">
+          ${logo}
+          <div style="color:#c8c8d8;font-family:Courier New,monospace;font-size:11px;letter-spacing:2px;margin-top:14px;text-transform:uppercase">[ 2nd edition ] &middot; AfroTech Intelligence Congress</div>
+        </td></tr>
+        <tr><td bgcolor="#f2f0ea" style="background-color:#f2f0ea;padding:24px;color:#0b0b12;font-family:${FONT};font-size:15px;line-height:1.55">
+          ${body}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>`;
 }
 
 interface StudentEmailData {
@@ -155,7 +164,7 @@ interface StudentEmailData {
 function eligibleTemplate({ name, attendancePct }: StudentEmailData) {
   const subject = "🎉 Your ATIC 2.0 Certificate of Completion";
   const html = layout(`
-    <h2 style="color:#2A2FE0;font-family:Arial Black,Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px">Congratulations, ${escapeHtml(name)}!</h2>
+    <h2 style="color:#2A2FE0;${H2}">Congratulations, ${escapeHtml(name)}!</h2>
     <p>Thank you for participating in <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <p>You attended <strong>${attendancePct}%</strong> of the sessions, which meets our
        eligibility threshold. You are <strong>certificate-eligible</strong>.</p>
@@ -169,7 +178,7 @@ function eligibleTemplate({ name, attendancePct }: StudentEmailData) {
 function notEligibleTemplate({ name, attendancePct }: StudentEmailData) {
   const subject = "Thank you for attending ATIC 2.0 — Attendance summary";
   const html = layout(`
-    <h2 style="color:#0b0b12;font-family:Arial Black,Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px">Thank you for joining us, ${escapeHtml(name)}</h2>
+    <h2 style="color:#0b0b12;${H2}">Thank you for joining us, ${escapeHtml(name)}</h2>
     <p>We appreciate you being part of <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
     <p>Our records show you attended <strong>${attendancePct}%</strong> of the sessions.
        Unfortunately this is below the ${eligibilityThreshold()}% threshold
@@ -191,45 +200,54 @@ interface QrEmailData {
   name: string;
   email: string;
   studentId: string;
-  qrPng: Buffer;
+  qrToken: string;
 }
 
 /**
- * Email a student their check-in QR code: shown inline in the body (cid:) and
- * also attached as a PNG so it can be saved to the phone's photos.
+ * Email a student their check-in QR code, shown in the body. The image is
+ * served from /q/<token>.png like the logo — inline "cid:" images were
+ * listed as attachments by Gmail instead of showing in the message. Without a
+ * public https base URL (local dev) it falls back to an inline attachment.
  */
-export async function sendQrEmail({ name, email, studentId, qrPng }: QrEmailData) {
+export async function sendQrEmail({ name, email, studentId, qrToken }: QrEmailData) {
   const subject = "Your ATIC 2.0 check-in QR code";
+  const base = publicBaseUrl();
+  const qrUrl = base ? `${base}/q/${qrToken}.png` : null;
   const html = layout(`
-    <h2 style="color:#2A2FE0;font-family:Arial Black,Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px">Hi ${escapeHtml(name)},</h2>
-    <p>Here is your personal check-in QR code for <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
-    <div style="text-align:center;margin:24px 0">
-      <img src="cid:qr-code" alt="Your check-in QR code" width="280" height="280"
-           style="width:280px;height:280px;border:1px solid #e2e8f0;border-radius:8px" />
-      <div style="font-size:13px;color:#64748b;margin-top:8px">Student ID: ${escapeHtml(studentId)}</div>
-    </div>
-    <p><strong>Show this QR code:</strong></p>
-    <ul>
+    <h2 style="color:#2A2FE0;${H2}">Hi ${escapeHtml(name)},</h2>
+    <p style="margin:0 0 16px">Here is your personal check-in QR code for <strong>ATIC 2.0 — Afrotech Intelligence Congress</strong>.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td align="center" style="padding:8px 0 20px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:12px;border:1px solid #d9d6cc;border-radius:8px">
+            <img src="${qrUrl ?? "cid:qr-code"}" alt="Your check-in QR code" width="260" height="260"
+                 style="display:block;width:260px;height:260px;border:0" />
+          </td></tr>
+        </table>
+        <div style="font-family:Courier New,monospace;font-size:13px;color:#5a5a6e;margin-top:10px">Student ID: ${escapeHtml(studentId)}</div>
+        ${qrUrl ? `<div style="margin-top:12px"><a href="${qrUrl}" style="display:inline-block;background-color:#F2A93B;color:#0b0b12;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:10px 18px;border-radius:4px">Open my QR code</a></div>` : ""}
+      </td></tr>
+    </table>
+    <p style="margin:0 0 6px"><strong>Show this QR code:</strong></p>
+    <ul style="margin:0 0 16px;padding-left:20px">
       <li>at the hotel check-in desk when you arrive, and</li>
       <li>at the door of every workshop session you attend (attendance counts toward your certificate).</li>
     </ul>
-    <p><strong>Tips:</strong> save the attached image to your phone's photos so you have it offline,
+    <p style="margin:0 0 16px"><strong>Tips:</strong> take a screenshot of the QR code (or tap <em>Open my QR code</em> and save it) so you have it offline,
        and turn your screen brightness up when it's scanned. A printed copy works too.</p>
-    <p style="color:#b45309">This code is personal — please don't share it.</p>
-    <p style="margin-top:24px">See you there,<br/>The ATIC Team</p>
+    <p style="margin:0 0 16px;color:#b45309">This code is personal — please don't share it.</p>
+    <p style="margin:24px 0 0">See you there,<br/>The ATIC Team</p>
   `);
-  const text = `Hi ${name}, your personal check-in QR code for ATIC 2.0 is attached (Student ID: ${studentId}). Show it at hotel check-in and at the door of every workshop session. Save it to your phone and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
+  const text = `Hi ${name}, here is your personal check-in QR code for ATIC 2.0 (Student ID: ${studentId})${qrUrl ? `: ${qrUrl}` : "."} Show it at hotel check-in and at the door of every workshop session. Save a screenshot and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
 
-  const safeId = studentId.replace(/[^a-z0-9_-]+/gi, "_");
   return deliver({
     to: email,
     subject,
     html,
     text,
-    attachments: [
-      { filename: "qr-code.png", content: qrPng, contentType: "image/png", inlineId: "qr-code" },
-      { filename: `checkin-qr-${safeId}.png`, content: qrPng, contentType: "image/png" },
-    ],
+    attachments: qrUrl
+      ? undefined
+      : [{ filename: "qr-code.png", content: await qrPngBuffer(qrToken), contentType: "image/png", inlineId: "qr-code" }],
   });
 }
 

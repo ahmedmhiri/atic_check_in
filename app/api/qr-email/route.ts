@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guard";
 import { emailConfigError, sendQrEmail } from "@/lib/email";
-import { qrPngBuffer } from "@/lib/qr";
 import { batchProgress, runEmailBatch } from "@/lib/email-batch";
 
 export const runtime = "nodejs";
@@ -33,7 +32,7 @@ export async function POST(req: NextRequest) {
         name: s.name,
         email: s.email,
         studentId: s.studentId,
-        qrPng: await qrPngBuffer(s.qrToken),
+        qrToken: s.qrToken,
       });
       await prisma.student.update({ where: { id: s.id }, data: { qrEmailSentAt: new Date() } });
       return NextResponse.json({ status: "sent", messageId });
@@ -56,8 +55,8 @@ export async function POST(req: NextRequest) {
   const { log, stopped } = await runEmailBatch({
     field: "qrEmailSentAt",
     students: pending,
-    send: async (s) =>
-      sendQrEmail({ name: s.name, email: s.email, studentId: s.studentId, qrPng: await qrPngBuffer(s.qrToken) }),
+    send: (s) =>
+      sendQrEmail({ name: s.name, email: s.email, studentId: s.studentId, qrToken: s.qrToken }),
   });
 
   const failedIds = log.filter((l) => l.status === "failed").map((l) => l.id);
