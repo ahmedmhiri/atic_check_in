@@ -42,8 +42,11 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl">Spreadsheet Import</h1>
         <p className="text-sm text-slate-400">
-          Upload a .xlsx or .csv with columns: <code>name</code>, <code>email</code>, <code>studentId</code>.
-          QR tokens are auto-generated. Duplicates are skipped.
+          Upload the <b className="text-slate-200">Google Form responses</b> export (.csv or .xlsx). Only the{" "}
+          <b className="text-slate-200">name</b> and <b className="text-slate-200">email</b> columns are used — everything else is
+          ignored. Students get IDs <code>ATIC-0001</code>, <code>ATIC-0002</code>… (or your own if the sheet has a Student ID
+          column). If someone answered twice, their latest response is used. Re-upload the updated sheet any time: only new
+          people are added.
         </p>
       </div>
 
