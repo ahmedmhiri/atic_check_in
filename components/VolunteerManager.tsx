@@ -7,10 +7,22 @@ export interface Account {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "SCANNER";
+  role: "SUPER_ADMIN" | "ADMIN" | "SCANNER";
   assignedTrackId: string | null;
   assignedTrack: { name: string } | null;
 }
+const ROLE_LABEL: Record<Account["role"], string> = {
+  SUPER_ADMIN: "Super admin",
+  ADMIN: "Admin",
+  SCANNER: "Volunteer",
+};
+
+const ROLE_BADGE: Record<Account["role"], string> = {
+  SUPER_ADMIN: "bg-white text-navy-950",
+  ADMIN: "bg-accent text-navy-950",
+  SCANNER: "bg-brand text-white",
+};
+
 interface Track {
   id: string;
   name: string;
@@ -53,7 +65,18 @@ async function api(url: string, method: string, body?: unknown) {
   return data;
 }
 
-export default function VolunteerManager({ accounts, tracks, meId }: { accounts: Account[]; tracks: Track[]; meId: string }) {
+export default function VolunteerManager({
+  accounts,
+  tracks,
+  meId,
+  canManage,
+}: {
+  accounts: Account[];
+  tracks: Track[];
+  meId: string;
+  /** Only a super admin may create accounts, change roles or set passwords. */
+  canManage: boolean;
+}) {
   const router = useRouter();
   const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: true };
   const [form, setForm] = useState(emptyForm);
@@ -247,6 +270,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
         </div>
       )}
 
+      {canManage && (
       <form onSubmit={create} className="card space-y-4 !shadow-block">
         <h2 className="eyebrow">(01) Add account</h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -296,6 +320,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
               <select id="v-role" className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 <option value="SCANNER">Volunteer</option>
                 <option value="ADMIN">Admin</option>
+                <option value="SUPER_ADMIN">Super admin</option>
               </select>
             </div>
             <div>
@@ -303,8 +328,8 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
               <select
                 id="v-track"
                 className="input"
-                value={form.role === "ADMIN" ? "" : form.assignedTrackId}
-                disabled={form.role === "ADMIN"}
+                value={form.role === "SCANNER" ? form.assignedTrackId : ""}
+                disabled={form.role !== "SCANNER"}
                 onChange={(e) => setForm({ ...form, assignedTrackId: e.target.value })}
               >
                 <option value="">Any track</option>
@@ -334,7 +359,9 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
           {busy ? "Creating…" : form.sendEmail ? "Create & email login" : "Create account"}
         </button>
       </form>
+      )}
 
+      {canManage && (
       <div className="card space-y-3">
         <h2 className="eyebrow">(02) Add many at once</h2>
         <p className="text-sm text-slate-400">
@@ -388,6 +415,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
           </div>
         )}
       </div>
+      )}
 
       <div className="card">
         <h2 className="eyebrow mb-3">(03) Accounts · {accounts.length}</h2>
@@ -399,15 +427,13 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-white">{a.name}</span>
-                    <span className={`badge ${a.role === "ADMIN" ? "bg-accent text-navy-950" : "bg-brand text-white"}`}>
-                      {a.role === "ADMIN" ? "Admin" : "Volunteer"}
-                    </span>
+                    <span className={`badge ${ROLE_BADGE[a.role]}`}>{ROLE_LABEL[a.role]}</span>
                     {isMe && <span className="badge border border-white/30 text-slate-300">You</span>}
                   </div>
                   <div className="truncate font-mono text-xs text-slate-400">{a.email}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {a.role === "SCANNER" && (
+                  {canManage && a.role === "SCANNER" && (
                     <select
                       className="input !w-auto !min-h-0 py-1.5 text-sm"
                       aria-label={`Track lock for ${a.name}`}
@@ -422,7 +448,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                       ))}
                     </select>
                   )}
-                  {!isMe && (
+                  {canManage && !isMe && (
                     <select
                       className="input !w-auto !min-h-0 py-1.5 text-sm"
                       aria-label={`Role for ${a.name}`}
@@ -431,18 +457,23 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                     >
                       <option value="SCANNER">Volunteer</option>
                       <option value="ADMIN">Admin</option>
+                      <option value="SUPER_ADMIN">Super admin</option>
                     </select>
                   )}
-                  <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
-                    Email login
-                  </button>
-                  <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => resetPassword(a)}>
-                    New password
-                  </button>
-                  {!isMe && (
-                    <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
-                      Remove
-                    </button>
+                  {canManage && (
+                    <>
+                      <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
+                        Email login
+                      </button>
+                      <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => resetPassword(a)}>
+                        New password
+                      </button>
+                      {!isMe && (
+                        <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
+                          Remove
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </li>

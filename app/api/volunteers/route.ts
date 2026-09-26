@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/guard";
+import { requireAdmin, requireSuperAdmin } from "@/lib/guard";
 import { accountSelect, parseRole, parseTrack, passwordError } from "@/lib/accounts";
 import { emailConfigError, sendLoginEmail } from "@/lib/email";
 
@@ -22,9 +22,10 @@ export async function GET() {
 
 // POST /api/volunteers { name, email, password, role?, assignedTrackId?, sendEmail? }
 // sendEmail: also email them the login (the account is created either way).
+// Super admin only — creating an account sets its password.
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireSuperAdmin();
   } catch (r) {
     return r as Response;
   }

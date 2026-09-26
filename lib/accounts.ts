@@ -15,10 +15,24 @@ export const accountSelect = {
   createdAt: true,
 } satisfies Prisma.AdminSelect;
 
-export type Role = "ADMIN" | "SCANNER";
+export type Role = "SUPER_ADMIN" | "ADMIN" | "SCANNER";
+
+export const ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "SCANNER"];
+
+/** Human label for a role, used in the UI and in emails. */
+export const ROLE_LABEL: Record<Role, string> = {
+  SUPER_ADMIN: "Super admin",
+  ADMIN: "Admin",
+  SCANNER: "Volunteer",
+};
 
 export function parseRole(v: unknown): Role | null {
-  return v === "ADMIN" || v === "SCANNER" ? v : null;
+  return v === "SUPER_ADMIN" || v === "ADMIN" || v === "SCANNER" ? v : null;
+}
+
+/** Admin-or-above: everything except account management. */
+export function isAdminOrAbove(role: Role | undefined | null): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
 }
 
 /** null/"" clears the lock; otherwise the track must exist. */

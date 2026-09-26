@@ -282,7 +282,7 @@ interface LoginEmailData {
   name: string;
   email: string;
   password: string;
-  role: "ADMIN" | "SCANNER";
+  role: "SUPER_ADMIN" | "ADMIN" | "SCANNER";
   trackName?: string | null;
 }
 
@@ -290,10 +290,17 @@ interface LoginEmailData {
 export async function sendLoginEmail({ name, email, password, role, trackName }: LoginEmailData) {
   const base = publicBaseUrl() ?? process.env.NEXTAUTH_URL ?? "";
   const loginUrl = `${base.replace(/\/+$/, "")}/login`;
-  const isAdmin = role === "ADMIN";
-  const subject = isAdmin ? "Your ATIC 2.0 admin access" : "Your ATIC 2.0 volunteer scanner access";
-  const what = isAdmin
-    ? "You have <strong>admin</strong> access to the ATIC 2.0 check-in app (dashboard, imports, scanners and team)."
+  const isSuper = role === "SUPER_ADMIN";
+  const isAdmin = isSuper || role === "ADMIN";
+  const subject = isSuper
+    ? "Your ATIC 2.0 super admin access"
+    : isAdmin
+    ? "Your ATIC 2.0 admin access"
+    : "Your ATIC 2.0 volunteer scanner access";
+  const what = isSuper
+    ? "You have <strong>super admin</strong> access to the ATIC 2.0 check-in app: everything an admin can do, plus managing the team — adding accounts, changing roles and resetting passwords."
+    : isAdmin
+    ? "You have <strong>admin</strong> access to the ATIC 2.0 check-in app (dashboard, imports, scanners and team). Only a super admin can change accounts or passwords."
     : `You're a <strong>volunteer scanner</strong> for ATIC 2.0. You'll use the app to scan participants' QR codes${
         trackName ? ` at the <strong>${escapeHtml(trackName)}</strong> door and the hotel desk` : " at the hotel desk and workshop doors"
       }.`;
@@ -321,6 +328,6 @@ export async function sendLoginEmail({ name, email, password, role, trackName }:
     <p style="margin:0 0 16px;color:#b45309">This login is personal — please don't share it. If you lose it, ask an organiser for a new one.</p>
     <p style="margin:24px 0 0">Thank you for helping,<br/>The ATIC Team</p>
   `);
-  const text = `Hi ${name}, here is your ATIC 2.0 check-in ${isAdmin ? "admin" : "volunteer scanner"} login. Website: ${loginUrl} — Email: ${email} — Password: ${password}. Open it in Chrome or Safari (not inside WhatsApp), sign in before the event and allow camera access. Please don't share this login. — The ATIC Team`;
+  const text = `Hi ${name}, here is your ATIC 2.0 check-in ${isSuper ? "super admin" : isAdmin ? "admin" : "volunteer scanner"} login. Website: ${loginUrl} — Email: ${email} — Password: ${password}. Open it in Chrome or Safari (not inside WhatsApp), sign in before the event and allow camera access. Please don't share this login. — The ATIC Team`;
   return deliver({ to: email, subject, html, text });
 }

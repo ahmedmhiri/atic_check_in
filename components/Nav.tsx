@@ -23,7 +23,9 @@ export default function Nav() {
   const { data: session, status } = useSession();
 
   if (pathname === "/login") return null;
-  const isAdmin = session?.user?.role === "ADMIN";
+  const role = session?.user?.role;
+  // Admin-or-above: super admins get the full menu too.
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
   // Until the session loads we don't know the role: show no links rather than
   // flashing the volunteer menu to an admin.
   const links = status === "loading" ? [] : isAdmin ? ADMIN_LINKS : SCANNER_LINKS;

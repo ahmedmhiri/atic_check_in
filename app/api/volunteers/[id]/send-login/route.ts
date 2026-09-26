@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/guard";
+import { requireSuperAdmin } from "@/lib/guard";
 import { emailConfigError } from "@/lib/email";
 import { emailFreshLogin } from "@/lib/login-mail";
 
 export const runtime = "nodejs";
 
 // POST /api/volunteers/[id]/send-login — new password, emailed to them.
+// This resets a password, so it is super admin only.
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireAdmin();
+    await requireSuperAdmin();
   } catch (r) {
     return r as Response;
   }
