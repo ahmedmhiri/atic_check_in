@@ -20,11 +20,13 @@ function isActive(pathname: string, href: string) {
 
 export default function Nav() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   if (pathname === "/login") return null;
   const isAdmin = session?.user?.role === "ADMIN";
-  const links = isAdmin ? ADMIN_LINKS : SCANNER_LINKS;
+  // Until the session loads we don't know the role: show no links rather than
+  // flashing the volunteer menu to an admin.
+  const links = status === "loading" ? [] : isAdmin ? ADMIN_LINKS : SCANNER_LINKS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/80 backdrop-blur-xl">

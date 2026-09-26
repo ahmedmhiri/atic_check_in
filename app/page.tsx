@@ -102,7 +102,7 @@ export default async function DashboardPage() {
                   <tr key={s.id} className="border-t border-white/5 transition hover:bg-white/5">
                     <td className="hidden px-3 py-1.5 font-mono text-xs sm:table-cell">{s.studentId}</td>
                     <td className="px-3 py-2 sm:py-1.5">
-                      <Link href={`/students/${s.id}`} className="text-white underline-offset-2 hover:underline">
+                      <Link href={`/students/${s.id}`} className="-my-1 block py-2 text-white underline-offset-2 hover:underline sm:inline sm:py-0">
                         {s.name}
                       </Link>
                       <div className="font-mono text-[11px] text-slate-500 sm:hidden">{s.studentId}</div>

@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 /** (Re)send one student's QR code email — for "I never got my QR" at the desk. */
-export default function ResendQrButton({ id, email, sentAt }: { id: string; email: string; sentAt: string | null }) {
+/** `sentLabel` is pre-formatted on the server (event timezone) so server and browser render the same text. */
+export default function ResendQrButton({ id, email, sentLabel }: { id: string; email: string; sentLabel: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -34,12 +35,12 @@ export default function ResendQrButton({ id, email, sentAt }: { id: string; emai
       <div className="text-sm">
         <div className="eyebrow mb-1">QR Code Email</div>
         <div className="text-slate-400">
-          {sentAt ? `Sent ${new Date(sentAt).toLocaleString()}` : "Not sent yet"}
+          {sentLabel ? `Sent ${sentLabel}` : "Not sent yet"}
         </div>
         {msg && <div className={msg.ok ? "text-emerald-400" : "text-red-400"}>{msg.text}</div>}
       </div>
       <button className="btn-secondary w-full sm:w-auto" onClick={send} disabled={busy}>
-        {busy ? "Sending…" : sentAt ? "Resend QR code" : "Send QR code"}
+        {busy ? "Sending…" : sentLabel ? "Resend QR code" : "Send QR code"}
       </button>
     </div>
   );

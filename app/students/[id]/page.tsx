@@ -62,7 +62,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
 
   return (
     <div className="space-y-6">
-      <Link href="/" className="text-sm text-accent hover:underline">
+      <Link href="/" className="inline-block py-2 text-sm text-accent hover:underline">
         ← Back to dashboard
       </Link>
 
@@ -120,7 +120,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
       <ResendQrButton
         id={student.id}
         email={student.email}
-        sentAt={student.qrEmailSentAt ? student.qrEmailSentAt.toISOString() : null}
+        sentLabel={student.qrEmailSentAt ? formatEventTime(student.qrEmailSentAt) : null}
       />
 
       <StudentOverride studentId={student.id} hotelCheckedIn={!!student.hotelCheckIn} rows={rows} />
