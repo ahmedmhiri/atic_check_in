@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import nodemailer, { type Transporter } from "nodemailer";
+import { promises as dns } from "dns";
 import { eligibilityThreshold } from "@/lib/config";
 import { qrPngBuffer } from "@/lib/qr";
 
@@ -46,18 +47,35 @@ function getResend(): Resend {
   return _resend;
 }
 
-let _smtp: Transporter | null = null;
-function getSmtp(): Transporter {
-  if (!_smtp) {
-    const port = Number(process.env.SMTP_PORT ?? 465);
-    _smtp = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: port === 465, // 465 = implicit TLS; 587 upgrades with STARTTLS
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
+let _smtp: { transporter: Transporter; expires: number } | null = null;
+/**
+ * Nodemailer picks a random address among the host's IPv4 AND IPv6 records.
+ * Where IPv6 has no route (many servers, many home networks) those picks hang
+ * ~21 s before falling back — measured here on smtp.gmail.com. Resolve IPv4
+ * ourselves and connect to it, keeping TLS verification on the real hostname.
+ */
+async function getSmtp(): Promise<Transporter> {
+  if (_smtp && _smtp.expires > Date.now()) return _smtp.transporter;
+  const hostname = process.env.SMTP_HOST!;
+  const port = Number(process.env.SMTP_PORT ?? 465);
+  let host = hostname;
+  try {
+    const v4 = await dns.resolve4(hostname);
+    if (v4.length) host = v4[Math.floor(Math.random() * v4.length)];
+  } catch {
+    /* fall back to the hostname */
   }
-  return _smtp;
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // 465 = implicit TLS; 587 upgrades with STARTTLS
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    tls: { servername: hostname }, // certificate is checked against smtp.gmail.com, not the IP
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+  });
+  _smtp = { transporter, expires: Date.now() + 5 * 60_000 }; // re-resolve every 5 min
+  return transporter;
 }
 
 interface Mail {
@@ -76,7 +94,7 @@ async function deliver(mail: Mail): Promise<string | undefined> {
 
   if (emailProvider() === "smtp") {
     try {
-      const info = await getSmtp().sendMail({
+      const info = await (await getSmtp()).sendMail({
         from: fromAddress(),
         replyTo: process.env.SMTP_USER,
         to: mail.to,
@@ -258,4 +276,51 @@ export async function sendQrEmail({ name, email, studentId, qrToken }: QrEmailDa
 export async function sendResultEmail(data: StudentEmailData, eligible: boolean) {
   const tpl = eligible ? eligibleTemplate(data) : notEligibleTemplate(data);
   return deliver({ to: data.email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+}
+
+interface LoginEmailData {
+  name: string;
+  email: string;
+  password: string;
+  role: "ADMIN" | "SCANNER";
+  trackName?: string | null;
+}
+
+/** Send a volunteer/admin their sign-in details for the check-in app. */
+export async function sendLoginEmail({ name, email, password, role, trackName }: LoginEmailData) {
+  const base = publicBaseUrl() ?? process.env.NEXTAUTH_URL ?? "";
+  const loginUrl = `${base.replace(/\/+$/, "")}/login`;
+  const isAdmin = role === "ADMIN";
+  const subject = isAdmin ? "Your ATIC 2.0 admin access" : "Your ATIC 2.0 volunteer scanner access";
+  const what = isAdmin
+    ? "You have <strong>admin</strong> access to the ATIC 2.0 check-in app (dashboard, imports, scanners and team)."
+    : `You're a <strong>volunteer scanner</strong> for ATIC 2.0. You'll use the app to scan participants' QR codes${
+        trackName ? ` at the <strong>${escapeHtml(trackName)}</strong> door and the hotel desk` : " at the hotel desk and workshop doors"
+      }.`;
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:6px 12px 6px 0;color:#5a5a6e;font-size:13px;white-space:nowrap">${label}</td><td style="padding:6px 0;font-family:Courier New,monospace;font-size:15px;font-weight:700;color:#0b0b12">${value}</td></tr>`;
+
+  const html = layout(`
+    <h2 style="color:#2A2FE0;${H2}">Hi ${escapeHtml(name)},</h2>
+    <p style="margin:0 0 16px">${what}</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #d9d6cc;border-radius:8px;margin:0 0 16px">
+      <tr><td style="padding:12px 16px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          ${row("Website", escapeHtml(loginUrl))}
+          ${row("Email", escapeHtml(email))}
+          ${row("Password", escapeHtml(password))}
+        </table>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 6px"><strong>On event day:</strong></p>
+    <ul style="margin:0 0 16px;padding-left:20px">
+      <li>Open the website in <strong>Chrome</strong> (Android) or <strong>Safari</strong> (iPhone) — not inside WhatsApp or Instagram.</li>
+      <li>Sign in once before the event and allow camera access when asked.</li>
+      <li>Tip: use "Add to Home Screen" so the scanner opens like an app.</li>
+    </ul>
+    <p style="margin:0 0 16px;color:#b45309">This login is personal — please don't share it. If you lose it, ask an organiser for a new one.</p>
+    <p style="margin:24px 0 0">Thank you for helping,<br/>The ATIC Team</p>
+  `);
+  const text = `Hi ${name}, here is your ATIC 2.0 check-in ${isAdmin ? "admin" : "volunteer scanner"} login. Website: ${loginUrl} — Email: ${email} — Password: ${password}. Open it in Chrome or Safari (not inside WhatsApp), sign in before the event and allow camera access. Please don't share this login. — The ATIC Team`;
+  return deliver({ to: email, subject, html, text });
 }

@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guard";
 import { accountSelect, parseRole, parseTrack, passwordError } from "@/lib/accounts";
+import { emailConfigError, sendLoginEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,8 @@ export async function GET() {
   return NextResponse.json({ accounts });
 }
 
-// POST /api/volunteers { name, email, password, role?, assignedTrackId? }
+// POST /api/volunteers { name, email, password, role?, assignedTrackId?, sendEmail? }
+// sendEmail: also email them the login (the account is created either way).
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin();
@@ -51,7 +53,21 @@ export async function POST(req: NextRequest) {
       },
       select: accountSelect,
     });
-    return NextResponse.json({ account }, { status: 201 });
+    let emailed: boolean | undefined;
+    let emailError: string | undefined;
+    if (body.sendEmail === true) {
+      emailError = emailConfigError() ?? undefined;
+      if (!emailError) {
+        try {
+          await sendLoginEmail({ name, email, password: body.password, role, trackName: account.assignedTrack?.name });
+          emailed = true;
+        } catch (e: any) {
+          emailError = e?.message ?? "Email failed";
+        }
+      }
+      emailed = emailed ?? false;
+    }
+    return NextResponse.json({ account, emailed, emailError }, { status: 201 });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });

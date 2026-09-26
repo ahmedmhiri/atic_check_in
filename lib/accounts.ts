@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -32,4 +33,13 @@ export function passwordError(pw: unknown): string | null {
   if (typeof pw !== "string" || pw.length < MIN_PASSWORD_LENGTH)
     return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
   return null;
+}
+
+// No 0/O/1/l/I — passwords get read off a phone screen or typed from an email.
+const PW_ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/** Random, easy-to-type password for emailed logins (server side). */
+export function generatePassword(len = 10): string {
+  const bytes = randomBytes(len);
+  return Array.from(bytes, (b) => PW_ALPHABET[b % PW_ALPHABET.length]).join("");
 }

@@ -24,6 +24,24 @@ function generatePassword(len = 10) {
   return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface BulkResult {
+  line: number;
+  name: string;
+  email: string;
+  status: "ok" | "error";
+  msg: string;
+}
+
+/** "Track B" / "b" / "any" -> track id (null = any track). undefined = no match. */
+function matchTrack(v: string, tracks: Track[]): string | null | undefined {
+  const norm = (x: string) => x.toLowerCase().replace(/^track\s*/, "").trim();
+  if (!v || /^(any|all|-)$/i.test(v)) return null;
+  return tracks.find((t) => norm(t.name) === norm(v))?.id;
+}
+
 async function api(url: string, method: string, body?: unknown) {
   const res = await fetch(url, {
     method,
@@ -37,22 +55,35 @@ async function api(url: string, method: string, body?: unknown) {
 
 export default function VolunteerManager({ accounts, tracks, meId }: { accounts: Account[]; tracks: Track[]; meId: string }) {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "" });
+  const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: true };
+  const [form, setForm] = useState(emptyForm);
+  const [notice, setNotice] = useState("");
+  const [bulkText, setBulkText] = useState("");
+  const [bulkEmail, setBulkEmail] = useState(true);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkTitle, setBulkTitle] = useState("");
+  const [bulkResults, setBulkResults] = useState<BulkResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Shown once after create / reset so the admin can pass the login on.
-  const [share, setShare] = useState<{ title: string; email: string; password: string } | null>(null);
+  const [share, setShare] = useState<{ title: string; email: string; password: string; note?: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
+    setNotice("");
     try {
-      await api("/api/volunteers", "POST", { ...form, assignedTrackId: form.assignedTrackId || null });
-      setShare({ title: `Account created for ${form.name}`, email: form.email.toLowerCase().trim(), password: form.password });
+      const res = await api("/api/volunteers", "POST", { ...form, assignedTrackId: form.assignedTrackId || null });
+      const note = !form.sendEmail
+        ? undefined
+        : res.emailed
+          ? `✓ Login emailed to ${form.email.trim()}`
+          : `⚠ Account created, but the email failed: ${res.emailError ?? "unknown error"}. Share the login below instead.`;
+      setShare({ title: `Account created for ${form.name}`, email: form.email.toLowerCase().trim(), password: form.password, note });
       setCopied(false);
-      setForm({ name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "" });
+      setForm(emptyForm);
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -83,6 +114,86 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
     }
   }
 
+  async function emailLogin(a: Account) {
+    if (!confirm(`Email ${a.name} a new login at ${a.email}? Their current password stops working.`)) return;
+    setError("");
+    setNotice("");
+    try {
+      await api(`/api/volunteers/${a.id}/send-login`, "POST");
+      setNotice(`✓ New login emailed to ${a.name} (${a.email}).`);
+    } catch (err: any) {
+      setError(`${a.name}: ${err.message}`);
+    }
+  }
+
+  // One request per person, sent in sequence: progress is visible and a long
+  // list can never hit a server timeout.
+  async function runBulkAdd() {
+    const lines = bulkText.split(/\r?\n/).map((l, i) => ({ n: i + 1, raw: l.trim() })).filter((l) => l.raw);
+    if (!lines.length) return;
+    if (!confirm(`Create ${lines.length} account(s)${bulkEmail ? " and email each person their login" : ""}?`)) return;
+    setBulkRunning(true);
+    setBulkTitle("Adding accounts");
+    setBulkResults([]);
+    const results: BulkResult[] = [];
+    for (const { n, raw } of lines) {
+      const [name = "", email = "", third = "", fourth = ""] = raw.split(/[,;\t]/).map((x) => x.trim());
+      const isAdmin = [third, fourth].some((x) => /^admin$/i.test(x));
+      const trackField = [third, fourth].find((x) => x && !/^(admin|volunteer|scanner)$/i.test(x)) ?? "";
+      const trackId = isAdmin ? null : matchTrack(trackField, tracks);
+      const fail = (msg: string) => results.push({ line: n, name, email, status: "error", msg });
+      if (!name || !EMAIL_RE.test(email)) fail("Needs: name, email");
+      else if (trackId === undefined) fail(`Unknown track "${trackField}"`);
+      else {
+        try {
+          const res = await api("/api/volunteers", "POST", {
+            name,
+            email,
+            password: generatePassword(),
+            role: isAdmin ? "ADMIN" : "SCANNER",
+            assignedTrackId: trackId,
+            sendEmail: bulkEmail,
+          });
+          results.push({
+            line: n,
+            name,
+            email,
+            status: !bulkEmail || res.emailed ? "ok" : "error",
+            msg: !bulkEmail ? "Created (not emailed)" : res.emailed ? "Created + login emailed" : `Created, email failed: ${res.emailError}`,
+          });
+        } catch (err: any) {
+          fail(err.message);
+        }
+        if (bulkEmail) await sleep(700); // be gentle with Gmail's sending limits
+      }
+      setBulkResults([...results]);
+    }
+    setBulkRunning(false);
+    if (results.every((r) => r.status === "ok")) setBulkText("");
+    router.refresh();
+  }
+
+  async function emailAllVolunteers() {
+    const targets = accounts.filter((a) => a.role === "SCANNER" && a.id !== meId);
+    if (!targets.length) return;
+    if (!confirm(`Email a NEW login to all ${targets.length} volunteers? Their current passwords stop working.`)) return;
+    setBulkRunning(true);
+    setBulkTitle("Emailing new logins");
+    setBulkResults([]);
+    const results: BulkResult[] = [];
+    for (const [i, a] of targets.entries()) {
+      try {
+        await api(`/api/volunteers/${a.id}/send-login`, "POST");
+        results.push({ line: i + 1, name: a.name, email: a.email, status: "ok", msg: "New login emailed" });
+      } catch (err: any) {
+        results.push({ line: i + 1, name: a.name, email: a.email, status: "error", msg: err.message });
+      }
+      setBulkResults([...results]);
+      await sleep(700);
+    }
+    setBulkRunning(false);
+  }
+
   async function remove(a: Account) {
     if (!confirm(`Remove ${a.name} (${a.email})? Their phone is signed out within about 2 minutes.`)) return;
     try {
@@ -107,6 +218,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
   return (
     <div className="space-y-6">
       {error && <p className="rounded border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
+      {notice && <p className="rounded border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-300">{notice}</p>}
 
       {share && (
         <div className="card !border-accent/60 space-y-3">
@@ -117,7 +229,13 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
               Password: <span className="text-accent">{share.password}</span>
             </div>
           </div>
-          <p className="text-xs text-slate-400">Send this to the volunteer now — the password isn&apos;t shown again.</p>
+          {share.note && (
+            <p className={`text-sm ${share.note.startsWith("✓") ? "text-emerald-300" : "text-amber-300"}`}>{share.note}</p>
+          )}
+          <p className="text-xs text-slate-400">
+            {share.note?.startsWith("✓") ? "You can also copy it here as a backup" : "Send this to the volunteer now"} — the password
+            isn&apos;t shown again.
+          </p>
           <div className="flex flex-wrap gap-2">
             <button className="btn-primary" onClick={copyShare}>
               {copied ? "Copied ✓" : "Copy login"}
@@ -203,13 +321,76 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
           <b className="text-slate-200">Volunteers</b> can only use the Scan pages (hotel desk + workshop scanners).{" "}
           <b className="text-slate-200">Admins</b> can do everything, including deleting students and sending certificates.
         </p>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-accent"
+            checked={form.sendEmail}
+            onChange={(e) => setForm({ ...form, sendEmail: e.target.checked })}
+          />
+          Email the login to this person
+        </label>
         <button className="btn-primary w-full sm:w-auto" disabled={busy}>
-          {busy ? "Creating…" : "Create account"}
+          {busy ? "Creating…" : form.sendEmail ? "Create & email login" : "Create account"}
         </button>
       </form>
 
+      <div className="card space-y-3">
+        <h2 className="eyebrow">(02) Add many at once</h2>
+        <p className="text-sm text-slate-400">
+          One person per line: <span className="font-mono text-slate-200">name, email, track</span>. Track is optional
+          (<span className="font-mono">A</span>, <span className="font-mono">Track B</span>, or leave empty for any track); write{" "}
+          <span className="font-mono">admin</span> instead of a track for an admin. Each person gets their own random password.
+        </p>
+        <textarea
+          className="input min-h-[8rem] font-mono"
+          value={bulkText}
+          onChange={(e) => setBulkText(e.target.value)}
+          placeholder={"Amira Ben Salah, amira@gmail.com, Track A\nYoussef Sahnoun, youssef@gmail.com, B\nSara Trabelsi, sara@gmail.com, admin"}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          disabled={bulkRunning}
+        />
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+          <input type="checkbox" className="h-5 w-5 accent-accent" checked={bulkEmail} onChange={(e) => setBulkEmail(e.target.checked)} />
+          Email each person their login
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-primary w-full sm:w-auto" onClick={runBulkAdd} disabled={bulkRunning || !bulkText.trim()}>
+            {bulkRunning ? "Working…" : "Add accounts"}
+          </button>
+          <button
+            className="btn-secondary w-full sm:w-auto"
+            onClick={emailAllVolunteers}
+            disabled={bulkRunning || !accounts.some((a) => a.role === "SCANNER")}
+          >
+            Email new logins to all volunteers
+          </button>
+        </div>
+        {bulkResults.length > 0 && (
+          <div className="rounded border border-white/10">
+            <div className="border-b border-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-mist">
+              {bulkTitle} · {bulkResults.filter((r) => r.status === "ok").length} ok,{" "}
+              {bulkResults.filter((r) => r.status === "error").length} failed{bulkRunning ? " · working…" : ""}
+            </div>
+            <ul className="max-h-64 divide-y divide-white/5 overflow-auto text-sm">
+              {bulkResults.map((r) => (
+                <li key={`${r.line}-${r.email}`} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2">
+                  <span className="min-w-0 truncate">
+                    <span className="text-white">{r.name || "(no name)"}</span>{" "}
+                    <span className="font-mono text-xs text-slate-500">{r.email}</span>
+                  </span>
+                  <span className={r.status === "ok" ? "text-emerald-300" : "text-red-300"}>{r.msg}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
       <div className="card">
-        <h2 className="eyebrow mb-3">(02) Accounts · {accounts.length}</h2>
+        <h2 className="eyebrow mb-3">(03) Accounts · {accounts.length}</h2>
         <ul className="divide-y divide-white/10">
           {accounts.map((a) => {
             const isMe = a.id === meId;
@@ -252,6 +433,9 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                       <option value="ADMIN">Admin</option>
                     </select>
                   )}
+                  <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
+                    Email login
+                  </button>
                   <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => resetPassword(a)}>
                     New password
                   </button>
