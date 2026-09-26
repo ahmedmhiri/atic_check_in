@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/guard";
+import { isUniqueViolation, str } from "@/lib/body";
 
 export const runtime = "nodejs";
 
@@ -31,9 +31,9 @@ export async function POST(
     );
   }
   const body = await req.json().catch(() => ({}));
-  const qrToken = (body.qrToken ?? "").trim();
-  const timeSlotId = (body.timeSlotId ?? "").trim();
-  const sessionOccurrenceId = (body.sessionOccurrenceId ?? "").trim();
+  const qrToken = str(body.qrToken);
+  const timeSlotId = str(body.timeSlotId);
+  const sessionOccurrenceId = str(body.sessionOccurrenceId);
 
   if (!qrToken || !timeSlotId || !sessionOccurrenceId) {
     return NextResponse.json(
@@ -76,51 +76,48 @@ export async function POST(
   const graceCutoff = new Date(occ.timeSlot.startTime.getTime() + GRACE_MINUTES * 60_000);
   const status = now > graceCutoff ? "LATE" : "PRESENT";
 
-  try {
-    const result = await prisma.$transaction(async (tx) => {
-      // Existing slot selection for this (student, timeSlot)?
-      const selection = await tx.slotSelection.findUnique({
-        where: { studentId_timeSlotId: { studentId: student.id, timeSlotId } },
-        include: { track: true },
-      });
+  // No interactive transaction on purpose: with the pooled connection
+  // (connection_limit=1) a transaction holds the only connection, and a burst
+  // of simultaneous scans timed out waiting for it (P2028). Each step below is
+  // a single query; the unique indexes settle any race between two scanners.
+  const scan = async () => {
+    const selWhere = { studentId_timeSlotId: { studentId: student.id, timeSlotId } };
+    const selection = await prisma.slotSelection.findUnique({ where: selWhere, include: { track: true } });
+    if (selection && selection.trackId !== trackId) {
+      return { kind: "wrong_track" as const, otherTrack: selection.track.name };
+    }
 
-      if (selection && selection.trackId !== trackId) {
-        return {
-          kind: "wrong_track" as const,
-          otherTrack: selection.track.name,
-        };
-      }
-
-      // No selection yet -> lock student to this track FOR THIS SLOT.
-      if (!selection) {
-        await tx.slotSelection.create({
-          data: { studentId: student.id, timeSlotId, trackId },
-        });
-        await tx.student.update({
-          where: { id: student.id },
-          data: { currentTrackId: trackId },
-        });
-      } else {
-        // Matches this track — keep currentTrackId in sync.
-        await tx.student.update({
-          where: { id: student.id },
-          data: { currentTrackId: trackId },
-        });
-      }
-
-      // Record attendance (unique per student+occurrence).
-      try {
-        const rec = await tx.attendanceRecord.create({
-          data: { studentId: student.id, sessionOccurrenceId, status },
-        });
-        return { kind: "recorded" as const, status: rec.status };
-      } catch (e) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-          return { kind: "duplicate" as const };
-        }
-        throw e;
-      }
+    const existing = await prisma.attendanceRecord.findUnique({
+      where: { studentId_sessionOccurrenceId: { studentId: student.id, sessionOccurrenceId } },
+      select: { id: true },
     });
+    if (existing) return { kind: "duplicate" as const };
+
+    // First scan in this slot locks the student to this track FOR THIS SLOT.
+    if (!selection) {
+      try {
+        await prisma.slotSelection.create({ data: { studentId: student.id, timeSlotId, trackId } });
+      } catch (e) {
+        if (!isUniqueViolation(e)) throw e;
+        // Another scanner locked this slot a moment ago — maybe to another track.
+        const winner = await prisma.slotSelection.findUnique({ where: selWhere, include: { track: true } });
+        if (winner && winner.trackId !== trackId) return { kind: "wrong_track" as const, otherTrack: winner.track.name };
+      }
+    }
+
+    let rec;
+    try {
+      rec = await prisma.attendanceRecord.create({ data: { studentId: student.id, sessionOccurrenceId, status } });
+    } catch (e) {
+      if (isUniqueViolation(e)) return { kind: "duplicate" as const }; // simultaneous re-scan
+      throw e;
+    }
+    await prisma.student.update({ where: { id: student.id }, data: { currentTrackId: trackId } });
+    return { kind: "recorded" as const, status: rec.status };
+  };
+
+  try {
+    const result = await scan();
 
     const who = { id: student.id, name: student.name, studentId: student.studentId };
 
@@ -147,7 +144,8 @@ export async function POST(
       attendanceStatus: result.status,
       student: who,
     });
-  } catch (e: any) {
-    return NextResponse.json({ status: "error", message: e?.message ?? "Server error" }, { status: 500 });
+  } catch (e) {
+    console.error("workshop check-in failed", e);
+    return NextResponse.json({ status: "error", message: "Server error — please scan again" }, { status: 500 });
   }
 }

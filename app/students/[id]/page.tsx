@@ -5,6 +5,7 @@ import StudentOverride, { SlotRow } from "@/components/StudentOverride";
 import ResendQrButton from "@/components/ResendQrButton";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
 import { eligibilityThreshold } from "@/lib/config";
+import { formatEventTime } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
           <Metric
             label="Hotel"
             value={student.hotelCheckIn ? "In" : "Out"}
-            sub={student.hotelCheckIn ? student.hotelCheckIn.checkedInAt.toLocaleString() : "not arrived"}
+            sub={student.hotelCheckIn ? formatEventTime(student.hotelCheckIn.checkedInAt) : "not arrived"}
           />
           <Metric label="Eligible" value={pct >= eligibilityThreshold() ? "Yes" : "No"} />
         </div>

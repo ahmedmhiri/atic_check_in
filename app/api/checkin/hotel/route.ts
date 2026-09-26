@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/guard";
+import { isUniqueViolation, str } from "@/lib/body";
+import { formatEventTime } from "@/lib/time";
 
 export const runtime = "nodejs";
 
@@ -13,7 +15,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const qrToken = (body.qrToken ?? "").trim();
+  const qrToken = str(body.qrToken);
   if (!qrToken) {
     return NextResponse.json({ error: "Missing qrToken" }, { status: 400 });
   }
@@ -26,27 +28,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid QR code — student not found" }, { status: 404 });
   }
 
-  if (student.hotelCheckIn) {
-    return NextResponse.json({
-      status: "already",
-      message: `Already checked in at ${student.hotelCheckIn.checkedInAt.toLocaleString()}`,
-      student: { id: student.id, name: student.name, studentId: student.studentId },
-      checkedInAt: student.hotelCheckIn.checkedInAt,
-    });
-  }
+  const who = { id: student.id, name: student.name, studentId: student.studentId };
+  const already = (at: Date) =>
+    NextResponse.json({ status: "already", message: `Already checked in at ${formatEventTime(at)}`, student: who, checkedInAt: at });
 
-  const checkIn = await prisma.hotelCheckIn.create({
-    data: {
-      studentId: student.id,
-      roomNumber: body.roomNumber?.trim() || null,
-      notes: body.notes?.trim() || null,
-    },
-  });
+  if (student.hotelCheckIn) return already(student.hotelCheckIn.checkedInAt);
+
+  let checkIn;
+  try {
+    checkIn = await prisma.hotelCheckIn.create({
+      data: { studentId: student.id, roomNumber: str(body.roomNumber) || null, notes: str(body.notes) || null },
+    });
+  } catch (e) {
+    // Two scanners (or a double read) hit the same badge at once: the other one won.
+    if (!isUniqueViolation(e)) throw e;
+    const existing = await prisma.hotelCheckIn.findUnique({ where: { studentId: student.id } });
+    return already(existing?.checkedInAt ?? new Date());
+  }
 
   return NextResponse.json({
     status: "checked_in",
     message: `${student.name} checked in successfully`,
-    student: { id: student.id, name: student.name, studentId: student.studentId },
+    student: who,
     checkedInAt: checkIn.checkedInAt,
   });
 }

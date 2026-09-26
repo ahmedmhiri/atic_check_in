@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guard";
+import { str } from "@/lib/body";
 
 export const runtime = "nodejs";
 
@@ -18,8 +19,18 @@ export async function POST(req: NextRequest) {
     return r as Response;
   }
 
-  const body = await req.json().catch(() => ({}));
-  const action = body.action as string;
+  const raw = await req.json().catch(() => ({}));
+  const action = str(raw.action);
+  // Every id arrives as untrusted JSON: keep strings only.
+  const body = {
+    studentId: str(raw.studentId),
+    timeSlotId: str(raw.timeSlotId),
+    trackId: str(raw.trackId),
+    sessionOccurrenceId: str(raw.sessionOccurrenceId),
+    attendanceRecordId: str(raw.attendanceRecordId),
+    status: raw.status,
+    checkedIn: raw.checkedIn === true,
+  };
 
   try {
     switch (action) {
@@ -76,7 +87,9 @@ export async function POST(req: NextRequest) {
               },
             });
           }
-        });
+          // Pooled connection_limit=1: wait for the connection rather than failing
+          // if scans are using it at the same moment.
+        }, { maxWait: 10_000, timeout: 20_000 });
         return NextResponse.json({ status: "ok" });
       }
 
@@ -134,6 +147,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
+    // P2025: record not found (e.g. already deleted in another tab); P2003: bad reference.
+    if (e?.code === "P2025") return NextResponse.json({ error: "Record not found" }, { status: 404 });
+    if (e?.code === "P2003") return NextResponse.json({ error: "Unknown student, slot or session" }, { status: 400 });
+    console.error("override failed", e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
