@@ -80,6 +80,9 @@ export default function VolunteerManager({
   const router = useRouter();
   const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: true };
   const [form, setForm] = useState(emptyForm);
+  // Account whose password the super admin is typing, and the value so far.
+  const [pwFor, setPwFor] = useState<string | null>(null);
+  const [pwValue, setPwValue] = useState("");
   const [notice, setNotice] = useState("");
   const [bulkText, setBulkText] = useState("");
   const [bulkEmail, setBulkEmail] = useState(true);
@@ -119,6 +122,27 @@ export default function VolunteerManager({
     setError("");
     try {
       await api(`/api/volunteers/${a.id}`, "PATCH", patch);
+      router.refresh();
+    } catch (err: any) {
+      setError(`${a.name}: ${err.message}`);
+    }
+  }
+
+  /** Set a password the super admin typed, rather than a generated one. */
+  async function setChosenPassword(a: Account) {
+    const password = pwValue;
+    if (password.length < 8) {
+      setError(`${a.name}: password must be at least 8 characters`);
+      return;
+    }
+    if (!confirm(`Set this password for ${a.name}? Their current password stops working.`)) return;
+    setError("");
+    try {
+      await api(`/api/volunteers/${a.id}`, "PATCH", { password });
+      setPwFor(null);
+      setPwValue("");
+      setShare({ title: `New password for ${a.name}`, email: a.email, password });
+      setCopied(false);
       router.refresh();
     } catch (err: any) {
       setError(`${a.name}: ${err.message}`);
@@ -465,8 +489,18 @@ export default function VolunteerManager({
                       <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
                         Email login
                       </button>
+                      <button
+                        className="btn-secondary !min-h-0 px-3 py-1.5 text-xs"
+                        onClick={() => {
+                          setPwFor(pwFor === a.id ? null : a.id);
+                          setPwValue("");
+                          setError("");
+                        }}
+                      >
+                        {pwFor === a.id ? "Cancel" : "Set password"}
+                      </button>
                       <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => resetPassword(a)}>
-                        New password
+                        Random password
                       </button>
                       {!isMe && (
                         <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
@@ -476,6 +510,34 @@ export default function VolunteerManager({
                     </>
                   )}
                 </div>
+                {canManage && pwFor === a.id && (
+                  <form
+                    className="flex w-full flex-wrap items-center gap-2 border-t border-white/10 pt-3 sm:w-auto sm:border-0 sm:pt-0"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setChosenPassword(a);
+                    }}
+                  >
+                    <input
+                      className="input !min-h-0 w-full py-1.5 text-sm sm:w-56"
+                      type="text"
+                      autoFocus
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      minLength={8}
+                      placeholder={`New password for ${a.name}`}
+                      aria-label={`New password for ${a.name}`}
+                      value={pwValue}
+                      onChange={(e) => setPwValue(e.target.value)}
+                    />
+                    <button type="submit" className="btn-primary !min-h-0 px-3 py-1.5 text-xs" disabled={pwValue.length < 8}>
+                      Save
+                    </button>
+                    <span className="text-xs text-slate-400">min 8 characters</span>
+                  </form>
+                )}
               </li>
             );
           })}
