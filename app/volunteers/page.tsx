@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { accountSelect, isAdminOrAbove } from "@/lib/accounts";
+import { emailConfigError } from "@/lib/email";
 import VolunteerManager from "@/components/VolunteerManager";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,13 @@ export default async function VolunteersPage() {
             : "The event team. Only a super admin can add accounts, change roles or reset passwords."}
         </p>
       </div>
-      <VolunteerManager accounts={accounts} tracks={tracks} meId={session.user.id} canManage={canManage} />
+      <VolunteerManager
+        accounts={accounts}
+        tracks={tracks}
+        meId={session.user.id}
+        canManage={canManage}
+        emailConfigured={emailConfigError() === null}
+      />
     </div>
   );
 }

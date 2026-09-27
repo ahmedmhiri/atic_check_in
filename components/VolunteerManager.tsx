@@ -70,15 +70,18 @@ export default function VolunteerManager({
   tracks,
   meId,
   canManage,
+  emailConfigured,
 }: {
   accounts: Account[];
   tracks: Track[];
   meId: string;
   /** Only a super admin may create accounts, change roles or set passwords. */
   canManage: boolean;
+  /** No mail provider configured: don't offer to email logins. */
+  emailConfigured: boolean;
 }) {
   const router = useRouter();
-  const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: true };
+  const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: emailConfigured };
   const [form, setForm] = useState(emptyForm);
   // Account whose password the super admin is typing, and the value so far.
   const [pwFor, setPwFor] = useState<string | null>(null);
@@ -176,18 +179,6 @@ export default function VolunteerManager({
       setShare({ title: `New password for ${a.name}`, email: a.email, password });
       setCopied(false);
       router.refresh();
-    } catch (err: any) {
-      setError(`${a.name}: ${err.message}`);
-    }
-  }
-
-  async function resetPassword(a: Account) {
-    const password = generatePassword();
-    if (!confirm(`Set a new password for ${a.name}? Their current password stops working.`)) return;
-    try {
-      await api(`/api/volunteers/${a.id}`, "PATCH", { password });
-      setShare({ title: `New password for ${a.name}`, email: a.email, password });
-      setCopied(false);
     } catch (err: any) {
       setError(`${a.name}: ${err.message}`);
     }
@@ -400,16 +391,22 @@ export default function VolunteerManager({
         </div>
         <p className="text-xs text-slate-400">
           <b className="text-slate-200">Volunteers</b> can only use the Scan pages (hotel desk + workshop scanners).{" "}
-          <b className="text-slate-200">Admins</b> can do everything, including deleting students and sending certificates.
+          <b className="text-slate-200">Admins</b> run the event: dashboard, imports, scanners, certificates and student
+          records. <b className="text-slate-200">Super admins</b> also manage this page — adding accounts, changing roles
+          and setting passwords.
         </p>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+        <label
+          className={`flex items-center gap-2 text-sm ${emailConfigured ? "cursor-pointer text-slate-200" : "cursor-not-allowed text-slate-500"}`}
+        >
           <input
             type="checkbox"
             className="h-5 w-5 accent-accent"
-            checked={form.sendEmail}
+            checked={form.sendEmail && emailConfigured}
+            disabled={!emailConfigured}
             onChange={(e) => setForm({ ...form, sendEmail: e.target.checked })}
           />
           Email the login to this person
+          {!emailConfigured && " — no mail provider configured, so the login is shown on screen instead"}
         </label>
         <button className="btn-primary w-full sm:w-auto" disabled={busy}>
           {busy ? "Creating…" : form.sendEmail ? "Create & email login" : "Create account"}
@@ -446,7 +443,8 @@ export default function VolunteerManager({
           <button
             className="btn-secondary w-full sm:w-auto"
             onClick={emailAllVolunteers}
-            disabled={bulkRunning || !accounts.some((a) => a.role === "SCANNER")}
+            disabled={bulkRunning || !emailConfigured || !accounts.some((a) => a.role === "SCANNER")}
+            title={emailConfigured ? undefined : "No mail provider configured"}
           >
             Email new logins to all volunteers
           </button>
@@ -529,7 +527,12 @@ export default function VolunteerManager({
                       >
                         {editFor === a.id ? "Cancel edit" : "Edit"}
                       </button>
-                      <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
+                      <button
+                        className="btn-secondary !min-h-0 px-3 py-1.5 text-xs"
+                        onClick={() => emailLogin(a)}
+                        disabled={!emailConfigured}
+                        title={emailConfigured ? undefined : "No mail provider configured"}
+                      >
                         Email login
                       </button>
                       <button
@@ -541,9 +544,6 @@ export default function VolunteerManager({
                         }}
                       >
                         {pwFor === a.id ? "Cancel" : "Set password"}
-                      </button>
-                      <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => resetPassword(a)}>
-                        Random password
                       </button>
                       {!isMe && (
                         <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
