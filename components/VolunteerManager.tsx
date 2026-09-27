@@ -83,6 +83,9 @@ export default function VolunteerManager({
   // Account whose password the super admin is typing, and the value so far.
   const [pwFor, setPwFor] = useState<string | null>(null);
   const [pwValue, setPwValue] = useState("");
+  // Account whose name/email the super admin is editing.
+  const [editFor, setEditFor] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState({ name: "", email: "" });
   const [notice, setNotice] = useState("");
   const [bulkText, setBulkText] = useState("");
   const [bulkEmail, setBulkEmail] = useState(true);
@@ -122,6 +125,35 @@ export default function VolunteerManager({
     setError("");
     try {
       await api(`/api/volunteers/${a.id}`, "PATCH", patch);
+      router.refresh();
+    } catch (err: any) {
+      setError(`${a.name}: ${err.message}`);
+    }
+  }
+
+  /** Save an edited name / email. */
+  async function saveDetails(a: Account) {
+    const name = editValue.name.trim();
+    const email = editValue.email.trim().toLowerCase();
+    if (!name) {
+      setError(`${a.name}: name is required`);
+      return;
+    }
+    if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)) {
+      setError(`${a.name}: a valid email is required`);
+      return;
+    }
+    const patch: Record<string, unknown> = {};
+    if (name !== a.name) patch.name = name;
+    if (email !== a.email) patch.email = email;
+    if (Object.keys(patch).length === 0) {
+      setEditFor(null);
+      return;
+    }
+    setError("");
+    try {
+      await api(`/api/volunteers/${a.id}`, "PATCH", patch);
+      setEditFor(null);
       router.refresh();
     } catch (err: any) {
       setError(`${a.name}: ${err.message}`);
@@ -486,6 +518,17 @@ export default function VolunteerManager({
                   )}
                   {canManage && (
                     <>
+                      <button
+                        className="btn-secondary !min-h-0 px-3 py-1.5 text-xs"
+                        onClick={() => {
+                          const open = editFor === a.id;
+                          setEditFor(open ? null : a.id);
+                          setEditValue(open ? { name: "", email: "" } : { name: a.name, email: a.email });
+                          setError("");
+                        }}
+                      >
+                        {editFor === a.id ? "Cancel edit" : "Edit"}
+                      </button>
                       <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
                         Email login
                       </button>
@@ -510,6 +553,38 @@ export default function VolunteerManager({
                     </>
                   )}
                 </div>
+                {canManage && editFor === a.id && (
+                  <form
+                    className="flex w-full flex-wrap items-center gap-2 border-t border-white/10 pt-3"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      saveDetails(a);
+                    }}
+                  >
+                    <input
+                      className="input !min-h-0 w-full py-1.5 text-sm sm:w-48"
+                      autoFocus
+                      placeholder="Name"
+                      aria-label={`Name for ${a.name}`}
+                      value={editValue.name}
+                      onChange={(e) => setEditValue({ ...editValue, name: e.target.value })}
+                    />
+                    <input
+                      className="input !min-h-0 w-full py-1.5 text-sm sm:w-64"
+                      type="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      placeholder="Email"
+                      aria-label={`Email for ${a.name}`}
+                      value={editValue.email}
+                      onChange={(e) => setEditValue({ ...editValue, email: e.target.value })}
+                    />
+                    <button type="submit" className="btn-primary !min-h-0 px-3 py-1.5 text-xs">
+                      Save
+                    </button>
+                  </form>
+                )}
                 {canManage && pwFor === a.id && (
                   <form
                     className="flex w-full flex-wrap items-center gap-2 border-t border-white/10 pt-3 sm:w-auto sm:border-0 sm:pt-0"

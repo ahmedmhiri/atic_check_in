@@ -13,8 +13,9 @@ async function isLastSuperAdmin(id: string) {
   return supers.length === 1 && supers[0].id === id;
 }
 
-// PATCH /api/volunteers/[id] { name?, password?, role?, assignedTrackId? }
-// Super admin only — this is where passwords and roles are changed.
+// PATCH /api/volunteers/[id] { name?, email?, password?, role?, assignedTrackId? }
+// Super admin only — this is where accounts are edited: name, email, password,
+// role and track lock.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   let session;
   try {
@@ -33,6 +34,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
     data.name = name;
+  }
+  if (body.email !== undefined) {
+    const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
+    data.email = email;
   }
   if (body.password !== undefined) {
     const pwErr = passwordError(body.password);
@@ -58,8 +65,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data.assignedTrackId = track.id;
   }
 
-  const account = await prisma.admin.update({ where: { id: current.id }, data, select: accountSelect });
-  return NextResponse.json({ account });
+  try {
+    const account = await prisma.admin.update({ where: { id: current.id }, data, select: accountSelect });
+    return NextResponse.json({ account });
+  } catch (e) {
+    // Email is unique: changing one to an address already in use lands here.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")
+      return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025")
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
+    return NextResponse.json({ error: "Could not update account" }, { status: 500 });
+  }
 }
 
 // DELETE /api/volunteers/[id] — their phone is signed out within ~1-2 minutes.
