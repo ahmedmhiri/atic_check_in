@@ -157,7 +157,7 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
           <QrScanner onScan={handleScan} paused={busy} />
         </>
       ) : (
-        <div className="card text-sm text-slate-500">Choose a time slot to enable the scanner.</div>
+        <div className="card text-sm text-ink-subtle">Choose a time slot to enable the scanner.</div>
       )}
 
       {/* Admin-only (it affects every student). Kept at the bottom, away from the scan area. */}

@@ -41,7 +41,7 @@ export default function DeleteStudentButton({ id, name, studentId }: { id: strin
     <div className="card flex flex-wrap items-center justify-between gap-3 border-red-400/30">
       <div className="text-sm">
         <div className="text-xs font-semibold uppercase tracking-[0.2em] text-red-400">Danger zone</div>
-        <div className="mt-1 text-slate-400">Permanently delete this student and all their records.</div>
+        <div className="mt-1 text-ink-muted">Permanently delete this student and all their records.</div>
         {error && <div className="mt-1 text-red-400">{error}</div>}
       </div>
       <button className="btn-danger w-full sm:w-auto" onClick={remove} disabled={busy}>

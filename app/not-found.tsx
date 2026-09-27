@@ -7,7 +7,7 @@ export default function NotFound() {
       <h1 className="text-4xl">
         Page <span className="text-accent">not found</span>
       </h1>
-      <p className="text-sm text-slate-400">That page doesn&apos;t exist — maybe a student or track was removed.</p>
+      <p className="text-sm text-ink-muted">That page doesn&apos;t exist — maybe a student or track was removed.</p>
       <Link href="/" className="btn-primary mt-2">
         Back to dashboard
       </Link>

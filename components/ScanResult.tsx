@@ -34,7 +34,7 @@ export default function ScanResult({
 
   if (!result) {
     return (
-      <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-white/15 bg-white/5 px-4 text-sm text-slate-400">
+      <div className="flex min-h-[4.5rem] items-center rounded-lg border border-dashed border-line bg-surface-subtle px-4 text-sm text-ink-muted">
         {idleText}
       </div>
     );

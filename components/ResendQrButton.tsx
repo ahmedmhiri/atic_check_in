@@ -34,7 +34,7 @@ export default function ResendQrButton({ id, email, sentLabel }: { id: string; e
     <div className="card flex flex-wrap items-center justify-between gap-3">
       <div className="text-sm">
         <div className="eyebrow mb-1">QR Code Email</div>
-        <div className="text-slate-400">
+        <div className="text-ink-muted">
           {sentLabel ? `Sent ${sentLabel}` : "Not sent yet"}
         </div>
         {msg && <div className={msg.ok ? "text-emerald-400" : "text-red-400"}>{msg.text}</div>}

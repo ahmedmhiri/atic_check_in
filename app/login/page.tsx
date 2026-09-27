@@ -40,7 +40,7 @@ function LoginForm() {
     <div className="flex min-h-[88vh] flex-col items-center justify-center gap-7 py-6">
       <div className="w-full max-w-sm">
         <Image src="/atic-logo.png" alt="ATIC — AfroTech Intelligence Congress" width={339} height={172} priority className="h-16 w-auto" />
-        <div className="mt-5 flex flex-wrap justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-mist">
+        <div className="mt-5 flex flex-wrap justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted">
           <span>[ 2nd edition ]</span>
           <span>AfroTech Intelligence Congress</span>
         </div>
@@ -50,7 +50,7 @@ function LoginForm() {
         </h1>
       </div>
 
-      <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4 !bg-navy-900 !shadow-block">
+      <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4 !bg-surface !shadow-block">
         <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-accent">(01) Admin sign in</p>
         <div>
           <label className="label">Email</label>
@@ -85,7 +85,7 @@ function LoginForm() {
       </form>
 
       <div className="flex flex-col items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">Organised by</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-subtle">Organised by</span>
         <span className="rounded-[10px] bg-white px-3 py-1.5">
           <Image src="/ieee-cs-iit.png" alt="IEEE Computer Society — IIT Student Branch Chapter" width={700} height={327} className="h-9 w-auto" />
         </span>

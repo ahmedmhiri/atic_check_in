@@ -41,9 +41,9 @@ export default function ImportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl">Spreadsheet Import</h1>
-        <p className="text-sm text-slate-400">
-          Upload the <b className="text-slate-200">Google Form responses</b> export (.csv or .xlsx). Only the{" "}
-          <b className="text-slate-200">name</b> and <b className="text-slate-200">email</b> columns are used — everything else is
+        <p className="text-sm text-ink-muted">
+          Upload the <b className="text-ink">Google Form responses</b> export (.csv or .xlsx). Only the{" "}
+          <b className="text-ink">name</b> and <b className="text-ink">email</b> columns are used — everything else is
           ignored. Students get IDs <code>ATIC-0001</code>, <code>ATIC-0002</code>… (or your own if the sheet has a Student ID
           column). If someone answered twice, their latest response is used. Re-upload the updated sheet any time: only new
           people are added.
@@ -74,15 +74,15 @@ export default function ImportPage() {
       {summary && (
         <div className="card space-y-4">
           <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 sm:gap-3">
-            <Tile label="Total rows" value={summary.total} tone="text-slate-100" />
+            <Tile label="Total rows" value={summary.total} tone="text-ink" />
             <Tile label="Created" value={summary.created} tone="text-emerald-400" />
             <Tile label="Skipped" value={summary.skipped} tone="text-amber-300" />
             <Tile label="Errors" value={summary.errors} tone="text-red-400" />
           </div>
 
-          <div className="max-h-80 overflow-auto rounded-lg border border-white/10">
+          <div className="max-h-80 overflow-auto rounded-lg border border-line">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
+              <thead className="sticky top-0 bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
                 <tr>
                   <th className="px-3 py-2">Row</th>
                   <th className="px-3 py-2">Student ID</th>
@@ -92,7 +92,7 @@ export default function ImportPage() {
               </thead>
               <tbody>
                 {summary.details.map((d, i) => (
-                  <tr key={i} className="border-t border-white/5">
+                  <tr key={i} className="border-t border-line">
                     <td className="px-3 py-1.5">{d.row}</td>
                     <td className="px-3 py-1.5">{d.studentId ?? "—"}</td>
                     <td className="px-3 py-1.5">
@@ -108,7 +108,7 @@ export default function ImportPage() {
                         {d.status}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 text-slate-400">{d.reason ?? ""}</td>
+                    <td className="px-3 py-1.5 text-ink-muted">{d.reason ?? ""}</td>
                   </tr>
                 ))}
               </tbody>
@@ -130,9 +130,9 @@ export default function ImportPage() {
 
 function Tile({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-lg bg-white/5 p-3">
+    <div className="rounded-lg bg-surface-subtle p-3">
       <div className={`text-2xl font-bold ${tone}`}>{value}</div>
-      <div className="text-xs text-slate-400">{label}</div>
+      <div className="text-xs text-ink-muted">{label}</div>
     </div>
   );
 }

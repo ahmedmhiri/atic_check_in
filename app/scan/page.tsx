@@ -19,7 +19,7 @@ export default async function ScanHubPage() {
   return (
     <div className="mx-auto max-w-lg space-y-4">
       <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-mist">[ Volunteer scanners ]</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted">[ Volunteer scanners ]</p>
         <h1 className="mt-2 text-4xl">
           Scan <span className="pill-word">QR</span>
         </h1>
@@ -27,7 +27,7 @@ export default async function ScanHubPage() {
 
       <Link
         href="/scan/hotel"
-        className="block rounded-lg bg-accent p-5 text-navy-950 shadow-block transition hover:-translate-y-0.5 active:translate-y-0"
+        className="block rounded-lg bg-accent p-5 text-white shadow-block transition hover:-translate-y-0.5 active:translate-y-0"
       >
         <div className="font-mono text-[11px] font-semibold opacity-70">/01 · Arrival desk</div>
         <div className="mt-1 font-display text-2xl font-black uppercase">Hotel check-in ↗</div>
@@ -40,14 +40,14 @@ export default async function ScanHubPage() {
             <Link
               key={t.id}
               href={`/scan/${t.id}`}
-              className="rounded-lg border border-white/15 bg-navy-900 p-5 text-center transition hover:border-white hover:shadow-block active:bg-navy-800"
+              className="rounded-lg border border-line bg-surface p-5 text-center transition hover:border-white hover:shadow-block active:bg-surface-subtle"
             >
-              <div className="font-display text-lg font-black uppercase text-white">{t.name}</div>
+              <div className="font-display text-lg font-black uppercase text-ink">{t.name}</div>
               <div className="mt-1 font-mono text-[11px] uppercase tracking-wider text-accent">Open scanner ↗</div>
             </Link>
           ))}
         </div>
-        {tracks.length === 0 && <p className="text-sm text-slate-500">No tracks defined.</p>}
+        {tracks.length === 0 && <p className="text-sm text-ink-subtle">No tracks defined.</p>}
       </div>
     </div>
   );

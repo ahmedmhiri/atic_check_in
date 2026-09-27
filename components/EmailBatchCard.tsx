@@ -83,7 +83,7 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="eyebrow">{title}</h2>
-          <p className="text-xs text-slate-500">{description}</p>
+          <p className="text-xs text-ink-subtle">{description}</p>
         </div>
         <button className="btn-primary w-full sm:w-auto" onClick={run} disabled={loading}>
           {loading ? "Sending…" : buttonLabel}
@@ -91,7 +91,7 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
       </div>
 
       {summary && (
-        <div className="rounded-lg bg-white/5 p-3 text-sm">
+        <div className="rounded-lg bg-surface-subtle p-3 text-sm">
           {summary.error && <div className="text-red-400">{summary.error}</div>}
           <span>
             Sent <b className="text-emerald-400">{summary.sent}</b>, failed <b className="text-red-400">{summary.failed}</b>
@@ -107,15 +107,15 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
             )}
           </span>
           {!summary.running && summary.failed > 0 && (
-            <div className="text-xs text-slate-400">Run it again to retry the failed ones.</div>
+            <div className="text-xs text-ink-muted">Run it again to retry the failed ones.</div>
           )}
         </div>
       )}
 
       {log.length > 0 && (
-        <div className="max-h-72 overflow-auto rounded-lg border border-white/10">
+        <div className="max-h-72 overflow-auto rounded-lg border border-line">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
+            <thead className="sticky top-0 bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
                 <th className="px-3 py-2">Student</th>
                 {showEligibility && (
@@ -129,9 +129,9 @@ export default function EmailBatchCard({ endpoint, title, description, buttonLab
             </thead>
             <tbody>
               {log.map((l) => (
-                <tr key={l.id} className="border-t border-white/5 align-top">
+                <tr key={l.id} className="border-t border-line align-top">
                   <td className="px-3 py-1.5">
-                    {l.name} <span className="text-slate-500">({l.studentId})</span>
+                    {l.name} <span className="text-ink-subtle">({l.studentId})</span>
                     {/* Inline, not a tooltip — tooltips don't exist on touch screens. */}
                     {l.error && <div className="text-xs text-red-400">{l.error}</div>}
                   </td>

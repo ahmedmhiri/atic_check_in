@@ -1,8 +1,12 @@
 import type { Config } from "tailwindcss";
 
-// ATIC 2.0 brand (from the "ATIC Congress Website Mockups" v3):
-// ink #0b0b12, indigo #2A2FE0, amber #F2A93B, cream #f2f0ea.
-// Token names are kept from the previous theme so every page picks these up.
+// Quiet professional theme: neutral slate surfaces, one restrained accent,
+// conventional semantic colours. Everything lives here, so re-theming the whole
+// app means editing these tokens.
+//
+// The ATIC 2.0 token names (navy/brand/accent/cream/mist) are kept so any class
+// still referencing them resolves sensibly, but `navy` is now a dark *text*
+// ramp rather than a page background.
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
@@ -11,30 +15,52 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        ink: {
+          DEFAULT: "#0f172a", // headings, primary text
+          muted: "#475569", // secondary text
+          subtle: "#94a3b8", // tertiary / placeholder
+        },
+        surface: {
+          DEFAULT: "#ffffff", // cards
+          page: "#f8fafc", // page background
+          subtle: "#f1f5f9", // inset tiles, table headers
+        },
+        line: {
+          DEFAULT: "#e2e8f0",
+          strong: "#cbd5e1",
+        },
+        accent: {
+          DEFAULT: "#4f46e5",
+          hover: "#4338ca",
+          soft: "#eef2ff",
+        },
+        success: { DEFAULT: "#059669", soft: "#ecfdf5" },
+        warn: { DEFAULT: "#d97706", soft: "#fffbeb" },
+        danger: { DEFAULT: "#dc2626", hover: "#b91c1c", soft: "#fef2f2" },
+
+        // Legacy names, remapped onto the quiet palette.
         navy: {
-          950: "#0b0b12", // page background (ink)
-          900: "#12121c", // raised surface
-          800: "#1b1b29",
-          700: "#2a2a35",
+          950: "#0f172a",
+          900: "#1e293b",
+          800: "#334155",
+          700: "#475569",
         },
-        brand: {
-          DEFAULT: "#2A2FE0", // indigo
-          600: "#5B60FF",
-        },
-        accent: "#F2A93B", // amber
-        cream: "#f2f0ea",
-        mist: "#c8c8d8", // nav / muted text on dark
+        brand: { DEFAULT: "#4f46e5", 600: "#6366f1" },
+        cream: "#f8fafc",
+        mist: "#475569",
       },
       fontFamily: {
-        sans: ["var(--font-montserrat)", "Montserrat", "Arial", "sans-serif"],
-        display: ["var(--font-unbounded)", "Unbounded", "Arial Black", "sans-serif"],
-        mono: ["var(--font-jetbrains)", '"JetBrains Mono"', "ui-monospace", "monospace"],
+        sans: ["var(--font-montserrat)", "system-ui", "sans-serif"],
+        display: ["var(--font-unbounded)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains)", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        glass: "0 1px 0 rgba(255, 255, 255, 0.04) inset",
-        // Hard offset block shadow, as on the mockup's "Your logo here" card.
-        glow: "5px 5px 0 0 #2A2FE0",
-        block: "6px 6px 0 0 #2A2FE0",
+        card: "0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.08)",
+        raised: "0 2px 4px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.08)",
+        // Legacy names from the dark theme, softened.
+        glass: "0 1px 2px rgba(15,23,42,.04)",
+        glow: "0 1px 2px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.08)",
+        block: "0 2px 4px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.08)",
       },
     },
   },

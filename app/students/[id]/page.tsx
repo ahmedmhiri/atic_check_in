@@ -69,7 +69,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl">{student.name}</h1>
-          <p className="break-all text-sm text-slate-400">
+          <p className="break-all text-sm text-ink-muted">
             {student.email} · <span className="font-mono">{student.studentId}</span>
           </p>
         </div>
@@ -88,7 +88,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
         <h2 className="mb-3 eyebrow">Slot-by-Slot History</h2>
         <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-slate-400">
+          <thead className="text-left text-ink-muted">
             <tr>
               <th className="px-3 py-2">Time Slot</th>
               <th className="px-3 py-2">Track Chosen</th>
@@ -99,14 +99,14 @@ export default async function StudentPage({ params }: { params: { id: string } }
             {rows.map((r) => {
               const trackName = r.sessions.find((s) => s.trackId === r.selectedTrackId)?.trackName;
               return (
-                <tr key={r.slotId} className="border-t border-white/5">
+                <tr key={r.slotId} className="border-t border-line">
                   <td className="px-3 py-2">{r.slotLabel}</td>
-                  <td className="px-3 py-2">{trackName ?? <span className="text-slate-500">—</span>}</td>
+                  <td className="px-3 py-2">{trackName ?? <span className="text-ink-subtle">—</span>}</td>
                   <td className="px-3 py-2">
                     {r.attendanceRecordId ? (
                       <span className="badge bg-emerald-400/15 text-emerald-300">{r.attendedStatus}</span>
                     ) : (
-                      <span className="badge bg-white/10 text-slate-400">absent</span>
+                      <span className="badge bg-surface-subtle text-ink-muted">absent</span>
                     )}
                   </td>
                 </tr>
@@ -134,8 +134,8 @@ function Metric({ label, value, sub }: { label: string; value: string; sub?: str
   return (
     <div className="card text-center sm:min-w-[7rem]">
       <div className="text-2xl font-bold text-accent">{value}</div>
-      <div className="text-xs font-medium text-slate-400">{label}</div>
-      {sub && <div className="text-[11px] text-slate-500">{sub}</div>}
+      <div className="text-xs font-medium text-ink-muted">{label}</div>
+      {sub && <div className="text-[11px] text-ink-subtle">{sub}</div>}
     </div>
   );
 }

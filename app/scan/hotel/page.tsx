@@ -65,7 +65,7 @@ export default function HotelScanPage() {
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-2xl sm:text-3xl">Hotel Check-In</h1>
         {stats && (
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-muted">
             <b className="text-emerald-400">{stats.hotelCheckedIn}</b> / {stats.totalStudents} arrived
           </span>
         )}
@@ -81,10 +81,10 @@ export default function HotelScanPage() {
           <div className="grid grid-cols-3 gap-2 text-center sm:gap-3">
             <Stat label="Arrived" value={stats.hotelCheckedIn} tone="text-emerald-400" />
             <Stat label="Not yet" value={stats.notArrived} tone="text-amber-300" />
-            <Stat label="Total" value={stats.totalStudents} tone="text-slate-100" />
+            <Stat label="Total" value={stats.totalStudents} tone="text-ink" />
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-ink-subtle">Loading…</p>
         )}
       </div>
     </div>
@@ -93,9 +93,9 @@ export default function HotelScanPage() {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-lg bg-white/5 p-3">
+    <div className="rounded-lg bg-surface-subtle p-3">
       <div className={`text-2xl font-bold ${tone}`}>{value}</div>
-      <div className="text-xs text-slate-400">{label}</div>
+      <div className="text-xs text-ink-muted">{label}</div>
     </div>
   );
 }

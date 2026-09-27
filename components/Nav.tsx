@@ -29,12 +29,12 @@ export default function Nav() {
   const links = status === "loading" ? [] : isAdmin ? ADMIN_LINKS : SCANNER_LINKS;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-navy-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface-subtle/80 backdrop-blur-xl">
       {/* Phones: brand + sign-out on the first row, links full-width below. */}
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-1 px-3 py-2.5 sm:px-4 sm:py-3">
         <Link href={isAdmin ? "/" : "/scan"} className="flex items-center gap-3" aria-label="ATIC Check-In home">
           <Image src="/atic-logo.png" alt="ATIC" width={339} height={172} priority className="h-9 w-auto" />
-          <span className="hidden font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-mist sm:inline">
+          <span className="hidden font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted sm:inline">
             [ Check-In ]
           </span>
         </Link>
@@ -46,7 +46,7 @@ export default function Nav() {
                 key={l.href}
                 href={l.href}
                 className={`relative flex-1 py-2.5 text-center font-mono text-[13px] font-medium uppercase tracking-[0.06em] transition sm:flex-none sm:py-1 ${
-                  active ? "text-accent" : "text-mist hover:text-white"
+                  active ? "text-accent" : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {l.label}
@@ -57,7 +57,7 @@ export default function Nav() {
         </nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
           {session?.user?.email && (
-            <span className="hidden font-mono text-xs text-slate-500 md:inline">
+            <span className="hidden font-mono text-xs text-ink-subtle md:inline">
               {session.user.email}
               {!isAdmin && " · volunteer"}
             </span>

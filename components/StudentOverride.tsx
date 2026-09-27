@@ -48,7 +48,7 @@ export default function StudentOverride({
     <div className="card space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="eyebrow">Manual Override</h2>
-        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-sm">
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line px-3 py-2 text-sm">
           <input
             className="h-5 w-5 accent-brand"
             type="checkbox"
@@ -60,9 +60,9 @@ export default function StudentOverride({
         </label>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-white/10">
+      <div className="overflow-auto rounded-lg border border-line">
         <table className="w-full text-sm">
-          <thead className="bg-white/5 text-left text-slate-400">
+          <thead className="bg-surface-subtle text-left text-ink-muted">
             <tr>
               <th className="px-3 py-2">Time Slot</th>
               <th className="px-3 py-2">Selected Track</th>
@@ -75,7 +75,7 @@ export default function StudentOverride({
               const targetOcc = selected?.occurrenceId ?? null;
               const attended = !!r.attendanceRecordId;
               return (
-                <tr key={r.slotId} className="border-t border-white/5">
+                <tr key={r.slotId} className="border-t border-line">
                   <td className="px-3 py-2">{r.slotLabel}</td>
                   <td className="px-3 py-2">
                     <select
@@ -138,7 +138,7 @@ export default function StudentOverride({
                         mark present
                       </button>
                     ) : (
-                      <span className="text-xs text-slate-500">pick a track first</span>
+                      <span className="text-xs text-ink-subtle">pick a track first</span>
                     )}
                   </td>
                 </tr>

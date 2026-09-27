@@ -20,11 +20,11 @@ export default async function VolunteersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-mist">[ Team access ]</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-muted">[ Team access ]</p>
         <h1 className="mt-2 text-4xl sm:text-5xl">
           Volun<span className="pill-word">teers</span>
         </h1>
-        <p className="mt-2 max-w-xl text-sm text-slate-400">
+        <p className="mt-2 max-w-xl text-sm text-ink-muted">
           Give each volunteer their own login instead of sharing the admin one. Volunteers only see the scanners.
         </p>
       </div>
