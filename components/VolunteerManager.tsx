@@ -58,6 +58,12 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
   const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: true };
   const [form, setForm] = useState(emptyForm);
   const [notice, setNotice] = useState("");
+  // Inline "set password" box: which account it's open for, and its fields.
+  const [pwFor, setPwFor] = useState<string | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwShow, setPwShow] = useState(false);
+  const [pwEmail, setPwEmail] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [bulkEmail, setBulkEmail] = useState(true);
   const [bulkRunning, setBulkRunning] = useState(false);
@@ -102,15 +108,43 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
     }
   }
 
-  async function resetPassword(a: Account) {
-    const password = generatePassword();
-    if (!confirm(`Set a new password for ${a.name}? Their current password stops working.`)) return;
+  function openPassword(a: Account) {
+    setPwFor(pwFor === a.id ? null : a.id);
+    setPwValue("");
+    setPwShow(false);
+    setPwEmail(false);
+    setError("");
+    setNotice("");
+  }
+
+  // Save the password the admin typed (or generated) — optionally emailing it.
+  async function savePassword(a: Account, e: React.FormEvent) {
+    e.preventDefault();
+    const password = pwValue;
+    if (password.length < 8) {
+      setError(`${a.name}: password must be at least 8 characters`);
+      return;
+    }
+    setPwBusy(true);
+    setError("");
+    setNotice("");
     try {
-      await api(`/api/volunteers/${a.id}`, "PATCH", { password });
-      setShare({ title: `New password for ${a.name}`, email: a.email, password });
+      if (pwEmail) await api(`/api/volunteers/${a.id}/send-login`, "POST", { password });
+      else await api(`/api/volunteers/${a.id}`, "PATCH", { password });
+      setShare({
+        title: `New password for ${a.name}`,
+        email: a.email,
+        password,
+        note: pwEmail ? `✓ New login emailed to ${a.email}` : undefined,
+      });
       setCopied(false);
+      setPwFor(null);
+      setPwValue("");
     } catch (err: any) {
-      setError(`${a.name}: ${err.message}`);
+      // With "email it", a failed email leaves the old password in place.
+      setError(`${a.name}: ${err.message}${pwEmail ? " — the password was NOT changed." : ""}`);
+    } finally {
+      setPwBusy(false);
     }
   }
 
@@ -395,7 +429,8 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
           {accounts.map((a) => {
             const isMe = a.id === meId;
             return (
-              <li key={a.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <li key={a.id} className="py-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-white">{a.name}</span>
@@ -436,8 +471,12 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                   <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
                     Email login
                   </button>
-                  <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => resetPassword(a)}>
-                    New password
+                  <button
+                    className={`btn-secondary !min-h-0 px-3 py-1.5 text-xs ${pwFor === a.id ? "!bg-white !text-navy-950" : ""}`}
+                    onClick={() => openPassword(a)}
+                    aria-expanded={pwFor === a.id}
+                  >
+                    {isMe ? "Change my password" : "New password"}
                   </button>
                   {!isMe && (
                     <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
@@ -445,6 +484,75 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                     </button>
                   )}
                 </div>
+                </div>
+
+                {pwFor === a.id && (
+                  <form
+                    onSubmit={(e) => savePassword(a, e)}
+                    className="mt-3 space-y-3 rounded-lg border border-accent/40 bg-navy-950 p-3 sm:p-4"
+                  >
+                    <label className="label" htmlFor={`pw-${a.id}`}>
+                      New password for {a.name}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="relative min-w-0 flex-1">
+                        <input
+                          id={`pw-${a.id}`}
+                          className="input pr-12 font-mono"
+                          type={pwShow ? "text" : "password"}
+                          autoComplete="new-password"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          minLength={8}
+                          required
+                          autoFocus
+                          value={pwValue}
+                          onChange={(e) => setPwValue(e.target.value)}
+                          placeholder="Type the password (min 8 characters)"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPwShow(!pwShow)}
+                          className="absolute inset-y-0 right-0 px-3 font-mono text-[11px] uppercase text-mist hover:text-white"
+                          aria-label={pwShow ? "Hide password" : "Show password"}
+                        >
+                          {pwShow ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-secondary shrink-0"
+                        onClick={() => {
+                          setPwValue(generatePassword());
+                          setPwShow(true);
+                        }}
+                      >
+                        Generate
+                      </button>
+                    </div>
+                    <p className={`text-xs ${pwValue && pwValue.length < 8 ? "text-amber-300" : "text-slate-500"}`}>
+                      {pwValue.length}/8 characters minimum. Their current password stops working once you save.
+                    </p>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+                      <input
+                        type="checkbox"
+                        className="h-5 w-5 accent-accent"
+                        checked={pwEmail}
+                        onChange={(e) => setPwEmail(e.target.checked)}
+                      />
+                      Also email it to {isMe ? "me" : "them"} ({a.email})
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button className="btn-primary w-full sm:w-auto" disabled={pwBusy || pwValue.length < 8}>
+                        {pwBusy ? "Saving…" : pwEmail ? "Save & email" : "Save password"}
+                      </button>
+                      <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setPwFor(null)} disabled={pwBusy}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
               </li>
             );
           })}
