@@ -13,6 +13,8 @@ export interface RosterRecord {
 export interface RosterIssue {
   row: number;
   studentId?: string;
+  name?: string;
+  email?: string;
   status: "error" | "skipped";
   reason: string;
 }
@@ -71,15 +73,23 @@ export function parseRoster(rows: Record<string, unknown>[]): ParsedRoster {
     const studentId = cell(r, columns.studentId) || undefined;
     if (!name && !email) return; // blank line
     if (!name || !email) {
-      issues.push({ row, studentId, status: "error", reason: `Missing ${!name ? "name" : "email"}` });
+      issues.push({ row, studentId, name, email, status: "error", reason: `Missing ${!name ? "name" : "email"}` });
       return;
     }
     if (!EMAIL_RE.test(email)) {
-      issues.push({ row, studentId, status: "error", reason: "Invalid email" });
+      issues.push({ row, studentId, name, email, status: "error", reason: "Invalid email" });
       return;
     }
     const prev = byEmail.get(email);
-    if (prev) issues.push({ row: prev.row, studentId: prev.studentId, status: "skipped", reason: `Duplicate response — row ${row} (newer) used` });
+    if (prev)
+      issues.push({
+        row: prev.row,
+        studentId: prev.studentId,
+        name: prev.name,
+        email: prev.email,
+        status: "skipped",
+        reason: `Duplicate response — row ${row} (newer) used`,
+      });
     byEmail.set(email, { row, name, email, studentId });
   });
 
@@ -89,7 +99,7 @@ export function parseRoster(rows: Record<string, unknown>[]): ParsedRoster {
   for (const rec of Array.from(byEmail.values()).sort((a, b) => a.row - b.row)) {
     if (rec.studentId) {
       if (seenIds.has(rec.studentId)) {
-        issues.push({ row: rec.row, studentId: rec.studentId, status: "skipped", reason: "Duplicate student ID within file" });
+        issues.push({ row: rec.row, studentId: rec.studentId, name: rec.name, email: rec.email, status: "skipped", reason: "Duplicate student ID within file" });
         continue;
       }
       seenIds.add(rec.studentId);

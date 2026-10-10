@@ -96,3 +96,25 @@ select option {
   background: #12121c;
   color: #fff;
 }
+
+/* Printing the student page: only the QR badge (.print-area), black on white. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+    color: #000 !important;
+  }
+  .print-area {
+    position: absolute;
+    top: 2cm;
+    left: 0;
+    right: 0;
+  }
+}

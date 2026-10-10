@@ -39,7 +39,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const details: { row: number; studentId?: string; status: RosterIssue["status"] | "created"; reason?: string }[] = [...issues];
+  const details: {
+    row: number;
+    studentId?: string;
+    name?: string;
+    email?: string;
+    status: RosterIssue["status"] | "created";
+    reason?: string;
+  }[] = [...issues];
   let created = 0;
 
   // Already imported (by email, or by a supplied student ID) -> skip.
@@ -55,11 +62,11 @@ export async function POST(req: NextRequest) {
 
   const toCreate = records.filter((r) => {
     if (existingEmail.has(r.email)) {
-      details.push({ row: r.row, studentId: existingEmail.get(r.email), status: "skipped", reason: "Already imported" });
+      details.push({ row: r.row, studentId: existingEmail.get(r.email), name: r.name, email: r.email, status: "skipped", reason: "Already imported" });
       return false;
     }
     if (r.studentId && existingId.has(r.studentId)) {
-      details.push({ row: r.row, studentId: r.studentId, status: "skipped", reason: "Student ID already used" });
+      details.push({ row: r.row, studentId: r.studentId, name: r.name, email: r.email, status: "skipped", reason: "Student ID already used" });
       return false;
     }
     return true;
@@ -81,11 +88,13 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.student.create({ data: { name: r.name, email: r.email, studentId, qrToken: generateQrToken() } });
       created++;
-      details.push({ row: r.row, studentId, status: "created" });
+      details.push({ row: r.row, studentId, name: r.name, email: r.email, status: "created" });
     } catch (e: any) {
       details.push({
         row: r.row,
         studentId,
+        name: r.name,
+        email: r.email,
         status: "error",
         reason: e?.code === "P2002" ? "Already exists (imported at the same time?)" : e?.message ?? "DB error",
       });

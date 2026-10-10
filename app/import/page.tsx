@@ -8,7 +8,8 @@ interface Summary {
   created: number;
   skipped: number;
   errors: number;
-  details: { row: number; studentId?: string; status: string; reason?: string }[];
+  columns: { name: string | null; email: string | null; studentId: string | null };
+  details: { row: number; studentId?: string; name?: string; email?: string; status: string; reason?: string }[];
 }
 
 export default function ImportPage() {
@@ -80,12 +81,19 @@ export default function ImportPage() {
             <Tile label="Errors" value={summary.errors} tone="text-red-400" />
           </div>
 
+          <p className="text-xs text-slate-400">
+            Emails taken from column <b className="text-slate-200">{summary.columns.email}</b>, names from{" "}
+            <b className="text-slate-200">{summary.columns.name}</b>. QR codes go to the addresses below.
+          </p>
+
           <div className="max-h-80 overflow-auto rounded-lg border border-white/10">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-navy-900 text-left text-xs uppercase tracking-wider text-slate-400">
                 <tr>
                   <th className="px-3 py-2">Row</th>
                   <th className="px-3 py-2">Student ID</th>
+                  <th className="px-3 py-2">Name</th>
+                  <th className="px-3 py-2">Email</th>
                   <th className="px-3 py-2">Status</th>
                   <th className="px-3 py-2">Reason</th>
                 </tr>
@@ -95,6 +103,8 @@ export default function ImportPage() {
                   <tr key={i} className="border-t border-white/5">
                     <td className="px-3 py-1.5">{d.row}</td>
                     <td className="px-3 py-1.5">{d.studentId ?? "—"}</td>
+                    <td className="px-3 py-1.5">{d.name || "—"}</td>
+                    <td className="break-all px-3 py-1.5 font-mono text-xs">{d.email || "—"}</td>
                     <td className="px-3 py-1.5">
                       <span
                         className={`badge ${

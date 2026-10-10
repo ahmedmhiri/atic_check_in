@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import StudentOverride, { SlotRow } from "@/components/StudentOverride";
 import ResendQrButton from "@/components/ResendQrButton";
+import QrCard from "@/components/QrCard";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
 import { eligibilityThreshold } from "@/lib/config";
 import { formatEventTime } from "@/lib/time";
+import { qrDataUrl } from "@/lib/qr";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,7 @@ export default async function StudentPage({ params }: { params: { id: string } }
   ]);
 
   if (!student) notFound();
+  const qrSrc = await qrDataUrl(student.qrToken);
 
   const totalSlots = slots.length;
   // Distinct slots attended (never more than one per slot).
@@ -116,6 +119,8 @@ export default async function StudentPage({ params }: { params: { id: string } }
         </table>
         </div>
       </div>
+
+      <QrCard src={qrSrc} name={student.name} studentId={student.studentId} />
 
       <ResendQrButton
         id={student.id}

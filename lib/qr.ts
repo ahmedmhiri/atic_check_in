@@ -16,7 +16,7 @@ export async function qrPngBuffer(token: string): Promise<Buffer> {
   });
 }
 
-/** Render a token to a data URL (for inline display in the UI). */
+/** Render a token to a data URL (student page: display, print, download). 512px so prints stay sharp. */
 export async function qrDataUrl(token: string): Promise<string> {
-  return QRCode.toDataURL(token, { errorCorrectionLevel: "M", margin: 2, width: 256 });
+  return QRCode.toDataURL(token, { errorCorrectionLevel: "M", margin: 2, width: 512 });
 }
