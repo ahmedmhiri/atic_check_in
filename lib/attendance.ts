@@ -20,3 +20,29 @@ export async function attendedSlotCounts(studentIds?: string[]): Promise<Map<str
 
   return new Map(Array.from(slotsByStudent, ([id, set]) => [id, set.size]));
 }
+
+/**
+ * Per student: distinct time slots attended, and how many of those were LATE
+ * (a slot is on time if any of its records is PRESENT). Drives the ranking.
+ */
+export async function attendanceSummary(): Promise<Map<string, { slots: number; late: number }>> {
+  const records = await prisma.attendanceRecord.findMany({
+    select: { studentId: true, status: true, sessionOccurrence: { select: { timeSlotId: true } } },
+  });
+
+  // studentId -> timeSlotId -> on time?
+  const byStudent = new Map<string, Map<string, boolean>>();
+  for (const r of records) {
+    let slots = byStudent.get(r.studentId);
+    if (!slots) byStudent.set(r.studentId, (slots = new Map()));
+    const slotId = r.sessionOccurrence.timeSlotId;
+    slots.set(slotId, slots.get(slotId) === true || r.status === "PRESENT");
+  }
+
+  return new Map(
+    Array.from(byStudent, ([id, slots]) => [
+      id,
+      { slots: slots.size, late: Array.from(slots.values()).filter((onTime) => !onTime).length },
+    ])
+  );
+}

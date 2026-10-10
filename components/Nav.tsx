@@ -5,14 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 
-const ADMIN_LINKS = [
-  { href: "/", label: "Dashboard" },
+// `short`: label on phones, where all links share one row.
+const ADMIN_LINKS: { href: string; label: string; short?: string }[] = [
+  { href: "/", label: "Dashboard", short: "Home" },
   { href: "/scan", label: "Scan" },
+  { href: "/ranking", label: "Ranking" },
   { href: "/import", label: "Import" },
   { href: "/volunteers", label: "Team" },
 ];
 // Volunteers can only reach the scanners.
-const SCANNER_LINKS = [{ href: "/scan", label: "Scan" }];
+const SCANNER_LINKS: typeof ADMIN_LINKS = [{ href: "/scan", label: "Scan" }];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -49,7 +51,14 @@ export default function Nav() {
                   active ? "text-accent" : "text-mist hover:text-white"
                 }`}
               >
-                {l.label}
+                {l.short ? (
+                  <>
+                    <span className="sm:hidden">{l.short}</span>
+                    <span className="hidden sm:inline">{l.label}</span>
+                  </>
+                ) : (
+                  l.label
+                )}
                 {active && <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded bg-accent sm:inset-x-0 sm:-bottom-1.5" />}
               </Link>
             );
