@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import QrScanner from "@/components/QrScanner";
 import ScanResult, { ScanTone } from "@/components/ScanResult";
+import { CLOSES_MINUTES_AFTER, OPENS_MINUTES_BEFORE, isSlotOpen } from "@/lib/slot-window";
 
 interface Session {
   id: string;
@@ -20,19 +21,8 @@ interface Slot {
   sessions: Session[];
 }
 
-// Slots open for scanning this many minutes before their start time.
-const EARLY_OPEN_MINUTES = 30;
-
-function slotWindow(slot: Slot) {
-  return {
-    opens: new Date(slot.startTime).getTime() - EARLY_OPEN_MINUTES * 60_000,
-    ends: new Date(slot.endTime).getTime(),
-  };
-}
-
-function isSlotLive(slot: Slot, now = Date.now()) {
-  const { opens, ends } = slotWindow(slot);
-  return now >= opens && now <= ends;
+function isSlotLive(slot: Slot) {
+  return isSlotOpen(slot.startTime, slot.endTime);
 }
 
 function fmtTime(iso: string) {
@@ -145,8 +135,10 @@ export default function TrackScanPage({ params }: { params: { trackId: string } 
         {activeSession && selectedSlot && !slotIsLive && (
           <p className="rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-sm text-amber-200">
             ⚠ This slot is not in progress (runs {fmtTime(selectedSlot.startTime)} –{" "}
-            {fmtTime(selectedSlot.endTime)}). Scans will be recorded against it anyway — double-check you picked
-            the right slot.
+            {fmtTime(selectedSlot.endTime)}).{" "}
+            {isAdmin
+              ? "As an admin your scans will be recorded against it anyway — double-check you picked the right slot."
+              : `Volunteer scans only count from ${OPENS_MINUTES_BEFORE} min before a slot starts to ${CLOSES_MINUTES_AFTER} min after it ends — pick the current slot, or ask an admin.`}
           </p>
         )}
       </div>

@@ -11,7 +11,7 @@ declare module "next-auth" {
       email?: string | null;
       role: Role;
       assignedTrackId?: string | null;
-      /** Account deleted since sign-in. */
+      /** Account deleted, or its password changed, since sign-in. */
       revoked?: boolean;
     };
   }
@@ -19,6 +19,7 @@ declare module "next-auth" {
     id: string;
     role: Role;
     assignedTrackId?: string | null;
+    sessionVersion: number;
   }
 }
 
@@ -29,7 +30,9 @@ declare module "next-auth/jwt" {
     assignedTrackId?: string | null;
     /** ms timestamp of the last DB re-check of this account. */
     checkedAt?: number;
-    /** Account deleted since sign-in: middleware and guards reject the token. */
+    /** Admin.sessionVersion at sign-in; a password change bumps it. Missing = 0. */
+    sessionVersion?: number;
+    /** Account deleted (or password changed) since sign-in: middleware and guards reject the token. */
     revoked?: boolean;
   }
 }

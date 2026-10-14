@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { generatePassword } from "@/lib/accounts";
+import { generatePassword, newPasswordData } from "@/lib/accounts";
 import { sendLoginEmail } from "@/lib/email";
 
 /**
@@ -20,9 +20,12 @@ export async function emailFreshLogin(
   if (!acct) return { ok: false, error: "Account not found" };
 
   const password = chosenPassword ?? generatePassword();
-  await prisma.admin.update({ where: { id: acct.id }, data: { password: await bcrypt.hash(password, 10) } });
+  const hash = await bcrypt.hash(password, 10);
+  await prisma.admin.update({ where: { id: acct.id }, data: { password: hash } });
   try {
     await sendLoginEmail({ name: acct.name, email: acct.email, password, role: acct.role, trackName: acct.assignedTrack?.name });
+    // Only once the new password has reached them: sign out old devices, clear any lock.
+    await prisma.admin.update({ where: { id: acct.id }, data: newPasswordData(hash) });
     return { ok: true };
   } catch (e: any) {
     await prisma.admin.update({ where: { id: acct.id }, data: { password: acct.password } });

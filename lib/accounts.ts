@@ -29,6 +29,19 @@ export async function parseTrack(v: unknown): Promise<{ ok: true; id: string | n
   return t ? { ok: true, id: t.id } : { ok: false, error: "Track not found" };
 }
 
+/**
+ * Update data for a password change: signs out every device already logged in
+ * (lib/auth.ts compares sessionVersion) and clears any brute-force lock.
+ */
+export function newPasswordData(hash: string) {
+  return {
+    password: hash,
+    sessionVersion: { increment: 1 },
+    failedLogins: 0,
+    lockedUntil: null,
+  } satisfies Prisma.AdminUpdateInput;
+}
+
 export function passwordError(pw: unknown): string | null {
   if (typeof pw !== "string" || pw.length < MIN_PASSWORD_LENGTH)
     return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;

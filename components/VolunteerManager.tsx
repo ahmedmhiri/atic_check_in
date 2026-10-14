@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
 export interface Account {
   id: string;
@@ -131,6 +132,11 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
     try {
       if (pwEmail) await api(`/api/volunteers/${a.id}/send-login`, "POST", { password });
       else await api(`/api/volunteers/${a.id}`, "PATCH", { password });
+      // A password change signs out every device on that account, this one included.
+      if (a.id === meId) {
+        await signOut({ callbackUrl: "/login?changed=1" });
+        return;
+      }
       setShare({
         title: `New password for ${a.name}`,
         email: a.email,

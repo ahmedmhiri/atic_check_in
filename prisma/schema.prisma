@@ -129,4 +129,10 @@ model Admin {
   assignedTrackId String?
   assignedTrack  Track?  @relation(fields: [assignedTrackId], references: [id])
   createdAt      DateTime @default(now())
+  // Bumped on every password change; signed-in sessions carrying an older
+  // value are revoked at their next re-check (lib/auth.ts).
+  sessionVersion Int      @default(0)
+  // Brute-force protection: wrong passwords in a row, and the lock they trigger.
+  failedLogins   Int      @default(0)
+  lockedUntil    DateTime?
 }

@@ -13,10 +13,25 @@ export default function LoginPage() {
   );
 }
 
+/**
+ * Only same-site paths: an absolute or protocol-relative callbackUrl
+ * ("https://evil", "//evil", "/\evil") would send a freshly signed-in
+ * volunteer off-site. NextAuth's own check is skipped with redirect: false.
+ */
+function safeCallback(raw: string | null): string {
+  if (!raw) return "/";
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return "/";
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") ?? "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,9 +44,10 @@ function LoginForm() {
     const res = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
     if (res?.error) {
-      setError("Invalid email or password");
+      // authorize() throws a readable message for a locked account.
+      setError(res.error === "CredentialsSignin" ? "Invalid email or password" : res.error);
     } else {
-      router.push(callbackUrl);
+      router.push(safeCallback(params.get("callbackUrl")));
       router.refresh();
     }
   }
@@ -78,6 +94,9 @@ function LoginForm() {
             required
           />
         </div>
+        {!error && params.get("changed") && (
+          <p className="text-sm text-emerald-400">Password changed — sign in with the new one.</p>
+        )}
         {error && <p className="text-sm text-red-400">{error}</p>}
         <button className="btn-primary w-full" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}

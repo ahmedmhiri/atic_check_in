@@ -13,12 +13,13 @@ function deny(status: 401 | 403, error: string) {
 /**
  * Signed-in, still-existing account of any role (admins and volunteer scanners).
  * getServerSession runs the jwt callback, which re-reads the account from the
- * DB every couple of minutes, so a deleted volunteer is rejected here quickly.
+ * DB every couple of minutes, so a deleted volunteer (or one whose password
+ * was changed) is rejected here quickly.
  */
 export async function requireStaff() {
   const session = await getServerSession(authOptions);
   if (!session?.user) throw deny(401, "Unauthorized");
-  if (session.user.revoked) throw deny(401, "Account removed — sign in again");
+  if (session.user.revoked) throw deny(401, "Signed out — account removed or password changed. Sign in again.");
   return session;
 }
 

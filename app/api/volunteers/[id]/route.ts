@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guard";
-import { accountSelect, parseRole, parseTrack, passwordError } from "@/lib/accounts";
+import { accountSelect, newPasswordData, parseRole, parseTrack, passwordError } from "@/lib/accounts";
 
 export const runtime = "nodejs";
 
@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.password !== undefined) {
     const pwErr = passwordError(body.password);
     if (pwErr) return NextResponse.json({ error: pwErr }, { status: 400 });
-    data.password = await bcrypt.hash(body.password, 10);
+    Object.assign(data, newPasswordData(await bcrypt.hash(body.password, 10)));
   }
   let role = current.role;
   if (body.role !== undefined) {

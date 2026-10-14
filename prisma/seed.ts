@@ -12,9 +12,15 @@ async function main() {
 
   if (email && password) {
     const hash = await bcrypt.hash(password, 10);
+    const existing = await prisma.admin.findUnique({ where: { email }, select: { password: true } });
+    // Re-seeding with the same password keeps everyone signed in; a changed one
+    // signs out devices still logged in with the old one (and clears any lock).
+    const changed = existing ? !(await bcrypt.compare(password, existing.password)) : false;
     await prisma.admin.upsert({
       where: { email },
-      update: { name, password: hash },
+      update: changed
+        ? { name, password: hash, sessionVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null }
+        : { name },
       create: { name, email, password: hash },
     });
     console.log(`Admin ready: ${email}`);
