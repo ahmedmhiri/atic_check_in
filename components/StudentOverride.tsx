@@ -60,26 +60,32 @@ export default function StudentOverride({
         </label>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-white/10">
-        <table className="w-full text-sm">
-          <thead className="bg-white/5 text-left text-slate-400">
+      {/* A table on wider screens; on phones each slot stacks into its own block. */}
+      <div className="rounded-lg border border-white/10 sm:overflow-auto">
+        <table className="block w-full text-sm sm:table">
+          <thead className="hidden bg-white/5 text-left text-slate-400 sm:table-header-group">
             <tr>
               <th className="px-3 py-2">Time Slot</th>
               <th className="px-3 py-2">Selected Track</th>
               <th className="px-3 py-2">Attendance</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="block sm:table-row-group">
             {rows.map((r) => {
               const selected = r.sessions.find((s) => s.trackId === r.selectedTrackId);
               const targetOcc = selected?.occurrenceId ?? null;
               const attended = !!r.attendanceRecordId;
               return (
-                <tr key={r.slotId} className="border-t border-white/5">
-                  <td className="px-3 py-2">{r.slotLabel}</td>
-                  <td className="px-3 py-2">
+                <tr
+                  key={r.slotId}
+                  className="block space-y-2 border-t border-white/5 p-3 first:border-t-0 sm:table-row sm:space-y-0 sm:p-0 sm:first:border-t"
+                >
+                  <td className="block font-semibold text-white sm:table-cell sm:px-3 sm:py-2 sm:font-normal sm:text-inherit">
+                    {r.slotLabel}
+                  </td>
+                  <td className="block sm:table-cell sm:px-3 sm:py-2">
                     <select
-                      className="input min-w-[8rem]"
+                      className="input w-full min-w-[8rem] sm:w-auto"
                       value={r.selectedTrackId ?? ""}
                       disabled={busy}
                       onChange={(e) => {
@@ -108,7 +114,7 @@ export default function StudentOverride({
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="block sm:table-cell sm:px-3 sm:py-2">
                     {attended ? (
                       <div className="flex items-center gap-2">
                         <span className="badge bg-emerald-400/15 text-emerald-300">{r.attendedStatus}</span>

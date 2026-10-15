@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import FinalizeButton from "@/components/FinalizeButton";
+import StudentList from "@/components/StudentList";
 import { attendedSlotCounts } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
         id: true,
         name: true,
         studentId: true,
+        email: true,
         hotelCheckIn: { select: { checkedInAt: true } },
         currentTrack: { select: { name: true } },
       },
@@ -139,60 +141,18 @@ export default async function DashboardPage() {
 
       <div className="card">
         <h2 className="eyebrow mb-3">(04) Students</h2>
-        <div className="max-h-[28rem] overflow-auto rounded-lg border border-white/10">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-navy-900 text-left font-mono text-[11px] uppercase tracking-wider text-mist">
-              <tr>
-                <th className="hidden px-3 py-2 sm:table-cell">Student ID</th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Opening</th>
-                <th className="hidden px-3 py-2 md:table-cell">Current Track</th>
-                <th className="px-3 py-2">Attended</th>
-                <th className="hidden px-3 py-2 sm:table-cell"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((s) => {
-                const count = attended.get(s.id) ?? 0;
-                const pct = totalSlots ? Math.round((count / totalSlots) * 100) : 0;
-                return (
-                  <tr key={s.id} className="border-t border-white/5 transition hover:bg-white/5">
-                    <td className="hidden px-3 py-1.5 font-mono text-xs sm:table-cell">{s.studentId}</td>
-                    <td className="px-3 py-2 sm:py-1.5">
-                      <Link href={`/students/${s.id}`} className="-my-1 block py-2 text-white underline-offset-2 hover:underline sm:inline sm:py-0">
-                        {s.name}
-                      </Link>
-                      <div className="font-mono text-[11px] text-slate-500 sm:hidden">{s.studentId}</div>
-                    </td>
-                    <td className="px-3 py-1.5">
-                      {s.hotelCheckIn ? (
-                        <span className="badge bg-emerald-400/15 text-emerald-300">in</span>
-                      ) : (
-                        <span className="badge bg-white/10 text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="hidden px-3 py-1.5 text-slate-300 md:table-cell">{s.currentTrack?.name ?? "—"}</td>
-                    <td className="whitespace-nowrap px-3 py-1.5">
-                      {count}/{totalSlots} <span className="text-slate-500">({pct}%)</span>
-                    </td>
-                    <td className="hidden px-3 py-1.5 text-right sm:table-cell">
-                      <Link href={`/students/${s.id}`} className="text-accent hover:underline">
-                        Details
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-              {students.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
-                    No students yet — import a spreadsheet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <StudentList
+          totalSlots={totalSlots}
+          students={students.map((s) => ({
+            id: s.id,
+            name: s.name,
+            studentId: s.studentId,
+            email: s.email,
+            opening: !!s.hotelCheckIn,
+            track: s.currentTrack?.name ?? null,
+            attended: attended.get(s.id) ?? 0,
+          }))}
+        />
       </div>
     </div>
   );
