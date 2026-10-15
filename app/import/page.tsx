@@ -8,7 +8,7 @@ interface Summary {
   created: number;
   skipped: number;
   errors: number;
-  columns: { name: string | null; email: string | null; studentId: string | null };
+  columns: { name: string | null; email: string | null; studentId: string | null; paid: string | null };
   details: { row: number; studentId?: string; name?: string; email?: string; status: string; reason?: string }[];
 }
 
@@ -43,11 +43,13 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl">Spreadsheet Import</h1>
         <p className="text-sm text-slate-400">
-          Upload the <b className="text-slate-200">Google Form responses</b> export (.csv or .xlsx). Only the{" "}
+          Upload the <b className="text-slate-200">Google Form responses</b> export or the{" "}
+          <b className="text-slate-200">final rooming sheet</b> (.csv or .xlsx). Only the{" "}
           <b className="text-slate-200">name</b> and <b className="text-slate-200">email</b> columns are used — everything else is
-          ignored. Students get IDs <code>ATIC-0001</code>, <code>ATIC-0002</code>… (or your own if the sheet has a Student ID
-          column). If someone answered twice, their latest response is used. Re-upload the updated sheet any time: only new
-          people are added.
+          ignored, except a payment column like <code>Paid 130</code>: then only the{" "}
+          <b className="text-slate-200">paid</b> rows are imported. Students get IDs <code>ATIC-0001</code>,{" "}
+          <code>ATIC-0002</code>… (or your own if the sheet has a Student ID column). If someone answered twice, their latest
+          response is used. Re-upload the updated sheet any time: only new people are added.
         </p>
       </div>
 
@@ -86,7 +88,19 @@ export default function ImportPage() {
 
           <p className="text-xs text-slate-400">
             Emails taken from column <b className="text-slate-200">{summary.columns.email}</b>, names from{" "}
-            <b className="text-slate-200">{summary.columns.name}</b>. QR codes go to the addresses below.
+            <b className="text-slate-200">{summary.columns.name}</b>.{" "}
+            {summary.columns.paid !== null && (
+              <>
+                Only rows marked <b className="text-slate-200">Paid</b> in column{" "}
+                <b className="text-slate-200">
+                  {!summary.columns.paid.trim() || summary.columns.paid.startsWith("__EMPTY")
+                    ? "(no header)"
+                    : summary.columns.paid}
+                </b>{" "}
+                were imported.{" "}
+              </>
+            )}
+            QR codes go to the addresses below.
           </p>
 
           <div className="max-h-80 overflow-auto rounded-lg border border-white/10">

@@ -8,8 +8,9 @@ import { readSheet } from "@/lib/sheet";
 export const runtime = "nodejs";
 
 // POST /api/import (multipart "file") — .xlsx or .csv, e.g. the Google Form
-// responses export. Uses name + email (+ optional student ID); other columns
-// are ignored. Re-importing an updated export only adds new people.
+// responses export or the rooming list. Uses name + email (+ optional student
+// ID); if the sheet has a payment column ("Paid 130"), only paid rows count.
+// Re-importing an updated export only adds new people.
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin();
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.student.create({ data: { name: r.name, email: r.email, studentId, qrToken: generateQrToken() } });
       created++;
-      details.push({ row: r.row, studentId, name: r.name, email: r.email, status: "created" });
+      details.push({ row: r.row, studentId, name: r.name, email: r.email, status: "created", reason: r.note });
     } catch (e: any) {
       details.push({
         row: r.row,
