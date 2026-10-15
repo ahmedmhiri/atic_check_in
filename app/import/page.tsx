@@ -68,6 +68,9 @@ export default function ImportPage() {
         <a href="/api/qr" className="btn-secondary w-full sm:w-auto">
           Download QR ZIP
         </a>
+        <a href="/api/students/export" className="btn-secondary w-full sm:w-auto">
+          Download student sheet
+        </a>
       </form>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

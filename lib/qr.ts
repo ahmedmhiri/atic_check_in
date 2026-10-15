@@ -6,13 +6,13 @@ export function generateQrToken(): string {
   return randomBytes(16).toString("hex");
 }
 
-/** Render a token to a PNG Buffer (for badges / ZIP export). */
-export async function qrPngBuffer(token: string): Promise<Buffer> {
+/** Render a token to a PNG Buffer (for badges / ZIP export; smaller for the spreadsheet export). */
+export async function qrPngBuffer(token: string, width = 512): Promise<Buffer> {
   return QRCode.toBuffer(token, {
     type: "png",
     errorCorrectionLevel: "M",
     margin: 2,
-    width: 512,
+    width,
   });
 }
 

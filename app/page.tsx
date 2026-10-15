@@ -140,7 +140,13 @@ export default async function DashboardPage() {
       <FinalizeButton />
 
       <div className="card">
-        <h2 className="eyebrow mb-3">(04) Students</h2>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="eyebrow">(04) Students</h2>
+          {/* Name, email, student ID and QR code (as a picture) for every student. */}
+          <a href="/api/students/export" className="font-mono text-[11px] uppercase tracking-wider text-accent hover:underline">
+            Download sheet (.xlsx) ↓
+          </a>
+        </div>
         <StudentList
           totalSlots={totalSlots}
           students={students.map((s) => ({
