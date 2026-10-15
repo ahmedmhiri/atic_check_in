@@ -99,7 +99,7 @@ export default async function DashboardPage() {
                     <th key={sl.id} className="px-2 py-2 text-center" title={sl.label}>
                       {/* "Session 1 · Sat 14:00" → "S1" with the time below */}
                       {sl.label.split(" · ")[0].replace(/^session\s*/i, "S")}
-                      <span className="block whitespace-nowrap normal-case tracking-normal text-slate-500">
+                      <span className="block normal-case tracking-normal text-slate-500 sm:whitespace-nowrap">
                         {sl.label.split(" · ").slice(1).join(" · ")}
                       </span>
                     </th>
@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                   );
                 })}
                 <tr className="border-t border-white/10 text-slate-500">
-                  <td className="px-3 py-1.5">Not chosen yet</td>
+                  <td className="px-3 py-1.5">Not chosen</td>
                   {slots.map((sl) => (
                     <td key={sl.id} className="px-2 py-1.5 text-center font-mono">
                       {Math.max(totalStudents - tracks.reduce((n, t) => n + chosen(sl.id, t.id), 0), 0)}
