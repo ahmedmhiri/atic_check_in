@@ -40,10 +40,14 @@ export default async function ScanHubPage() {
             <Link
               key={t.id}
               href={`/scan/${t.id}`}
-              className="rounded-lg border border-white/15 bg-navy-900 p-5 text-center transition hover:border-white hover:shadow-block active:bg-navy-800"
+              className="min-w-0 rounded-lg border border-white/15 bg-navy-900 p-4 text-center transition hover:border-white hover:shadow-block active:bg-navy-800 sm:p-5"
             >
-              <div className="font-display text-lg font-black uppercase text-white">{t.name}</div>
-              <div className="mt-1 font-mono text-[11px] uppercase tracking-wider text-accent">Open scanner ↗</div>
+              {/* "Track 2 · Artificial Intelligence": big number, topic below, so long words fit on phones. */}
+              <div className="font-display text-lg font-black uppercase text-white">{t.name.split(" · ")[0]}</div>
+              {t.name.includes(" · ") && (
+                <div className="mt-0.5 text-sm leading-snug text-slate-300">{t.name.split(" · ").slice(1).join(" · ")}</div>
+              )}
+              <div className="mt-2 font-mono text-[11px] uppercase tracking-wider text-accent">Open scanner ↗</div>
             </Link>
           ))}
         </div>
