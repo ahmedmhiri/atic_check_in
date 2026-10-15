@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/guard";
 import { isUniqueViolation, str } from "@/lib/body";
 import { isSlotOpen } from "@/lib/slot-window";
 import { formatEventTime } from "@/lib/time";
+import { isAdminOrAbove } from "@/lib/accounts";
 
 export const runtime = "nodejs";
 
@@ -58,7 +59,7 @@ export async function POST(
 
   // Volunteers can only record a slot while it is running (the page only warns;
   // this is the real check). Admins may record outside it to fix a missed scan.
-  if (session.user.role !== "ADMIN" && !isSlotOpen(occ.timeSlot.startTime, occ.timeSlot.endTime)) {
+  if (!isAdminOrAbove(session.user.role) && !isSlotOpen(occ.timeSlot.startTime, occ.timeSlot.endTime)) {
     return NextResponse.json(
       {
         status: "rejected",

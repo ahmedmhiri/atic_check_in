@@ -16,14 +16,17 @@ async function main() {
     // Re-seeding with the same password keeps everyone signed in; a changed one
     // signs out devices still logged in with the old one (and clears any lock).
     const changed = existing ? !(await bcrypt.compare(password, existing.password)) : false;
+    // The seeded account is the super admin: the only role that can manage
+    // accounts and reset passwords. Re-seeding also repairs the role if an
+    // earlier seed created it before SUPER_ADMIN existed.
     await prisma.admin.upsert({
       where: { email },
       update: changed
-        ? { name, password: hash, sessionVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null }
-        : { name },
-      create: { name, email, password: hash },
+        ? { name, role: "SUPER_ADMIN", password: hash, sessionVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null }
+        : { name, role: "SUPER_ADMIN" },
+      create: { name, email, password: hash, role: "SUPER_ADMIN" },
     });
-    console.log(`Admin ready: ${email}`);
+    console.log(`Super admin ready: ${email}`);
   } else {
     console.log("SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD not set — skipping admin seed.");
   }

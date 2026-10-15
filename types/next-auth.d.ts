@@ -1,7 +1,7 @@
 import "next-auth";
 import "next-auth/jwt";
 
-type Role = "ADMIN" | "SCANNER";
+type Role = "SUPER_ADMIN" | "ADMIN" | "SCANNER";
 
 declare module "next-auth" {
   interface Session {

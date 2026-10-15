@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/guard";
+import { requireSuperAdmin } from "@/lib/guard";
 import { emailConfigError } from "@/lib/email";
 import { emailFreshLogin } from "@/lib/login-mail";
 import { passwordError } from "@/lib/accounts";
@@ -7,10 +7,11 @@ import { passwordError } from "@/lib/accounts";
 export const runtime = "nodejs";
 
 // POST /api/volunteers/[id]/send-login { password? } — set the password (the
-// one chosen by the admin, or a random one) and email it to them.
+// one chosen, or a random one) and email it to them. This resets a password,
+// so it is super admin only.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireAdmin();
+    await requireSuperAdmin();
   } catch (r) {
     return r as Response;
   }

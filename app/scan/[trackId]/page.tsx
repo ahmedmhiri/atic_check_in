@@ -34,7 +34,7 @@ type Result = { status: string; message: string; at: number } | null;
 export default function TrackScanPage({ params }: { params: { trackId: string } }) {
   const { trackId } = params;
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "ADMIN";
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotId, setSlotId] = useState("");
   const [result, setResult] = useState<Result>(null);

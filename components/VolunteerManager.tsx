@@ -8,10 +8,22 @@ export interface Account {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "SCANNER";
+  role: "SUPER_ADMIN" | "ADMIN" | "SCANNER";
   assignedTrackId: string | null;
   assignedTrack: { name: string } | null;
 }
+const ROLE_LABEL: Record<Account["role"], string> = {
+  SUPER_ADMIN: "Super admin",
+  ADMIN: "Admin",
+  SCANNER: "Volunteer",
+};
+
+const ROLE_BADGE: Record<Account["role"], string> = {
+  SUPER_ADMIN: "bg-white text-navy-950",
+  ADMIN: "bg-accent text-navy-950",
+  SCANNER: "bg-brand text-white",
+};
+
 interface Track {
   id: string;
   name: string;
@@ -59,10 +71,27 @@ async function api(url: string, method: string, body?: unknown) {
   return data;
 }
 
-export default function VolunteerManager({ accounts, tracks, meId }: { accounts: Account[]; tracks: Track[]; meId: string }) {
+export default function VolunteerManager({
+  accounts,
+  tracks,
+  meId,
+  canManage,
+  emailConfigured,
+}: {
+  accounts: Account[];
+  tracks: Track[];
+  meId: string;
+  /** Only a super admin may create accounts, change roles or set passwords. */
+  canManage: boolean;
+  /** No mail provider configured: don't offer to email logins. */
+  emailConfigured: boolean;
+}) {
   const router = useRouter();
-  const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: true };
+  const emptyForm = { name: "", email: "", password: "", role: "SCANNER", assignedTrackId: "", sendEmail: emailConfigured };
   const [form, setForm] = useState(emptyForm);
+  // Account whose name/email the super admin is editing.
+  const [editFor, setEditFor] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState({ name: "", email: "" });
   const [notice, setNotice] = useState("");
   // Inline "set password" box: which account it's open for, and its fields.
   const [pwFor, setPwFor] = useState<string | null>(null);
@@ -114,6 +143,35 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
     }
   }
 
+  /** Save an edited name / email. */
+  async function saveDetails(a: Account) {
+    const name = editValue.name.trim();
+    const email = editValue.email.trim().toLowerCase();
+    if (!name) {
+      setError(`${a.name}: name is required`);
+      return;
+    }
+    if (!EMAIL_RE.test(email)) {
+      setError(`${a.name}: a valid email is required`);
+      return;
+    }
+    const patch: Record<string, unknown> = {};
+    if (name !== a.name) patch.name = name;
+    if (email !== a.email) patch.email = email;
+    if (Object.keys(patch).length === 0) {
+      setEditFor(null);
+      return;
+    }
+    setError("");
+    try {
+      await api(`/api/volunteers/${a.id}`, "PATCH", patch);
+      setEditFor(null);
+      router.refresh();
+    } catch (err: any) {
+      setError(`${a.name}: ${err.message}`);
+    }
+  }
+
   function openPassword(a: Account) {
     setPwFor(pwFor === a.id ? null : a.id);
     setPwValue("");
@@ -123,7 +181,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
     setNotice("");
   }
 
-  // Save the password the admin typed (or generated) — optionally emailing it.
+  // Save the password the super admin typed (or generated) — optionally emailing it.
   async function savePassword(a: Account, e: React.FormEvent) {
     e.preventDefault();
     const password = pwValue;
@@ -292,6 +350,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
         </div>
       )}
 
+      {canManage && (
       <form onSubmit={create} className="card space-y-4 !shadow-block">
         <h2 className="eyebrow">(01) Add account</h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -341,6 +400,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
               <select id="v-role" className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 <option value="SCANNER">Volunteer</option>
                 <option value="ADMIN">Admin</option>
+                <option value="SUPER_ADMIN">Super admin</option>
               </select>
             </div>
             <div>
@@ -348,8 +408,8 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
               <select
                 id="v-track"
                 className="input"
-                value={form.role === "ADMIN" ? "" : form.assignedTrackId}
-                disabled={form.role === "ADMIN"}
+                value={form.role === "SCANNER" ? form.assignedTrackId : ""}
+                disabled={form.role !== "SCANNER"}
                 onChange={(e) => setForm({ ...form, assignedTrackId: e.target.value })}
               >
                 <option value="">Any track</option>
@@ -364,22 +424,30 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
         </div>
         <p className="text-xs text-slate-400">
           <b className="text-slate-200">Volunteers</b> can only use the Scan pages (hotel desk + workshop scanners).{" "}
-          <b className="text-slate-200">Admins</b> can do everything, including deleting students and sending certificates.
+          <b className="text-slate-200">Admins</b> run the event: dashboard, imports, scanners, certificates and student
+          records. <b className="text-slate-200">Super admins</b> also manage this page — adding accounts, changing roles
+          and setting passwords.
         </p>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+        <label
+          className={`flex items-center gap-2 text-sm ${emailConfigured ? "cursor-pointer text-slate-200" : "cursor-not-allowed text-slate-500"}`}
+        >
           <input
             type="checkbox"
             className="h-5 w-5 accent-accent"
-            checked={form.sendEmail}
+            checked={form.sendEmail && emailConfigured}
+            disabled={!emailConfigured}
             onChange={(e) => setForm({ ...form, sendEmail: e.target.checked })}
           />
           Email the login to this person
+          {!emailConfigured && " — no mail provider configured, so the login is shown on screen instead"}
         </label>
         <button className="btn-primary w-full sm:w-auto" disabled={busy}>
           {busy ? "Creating…" : form.sendEmail ? "Create & email login" : "Create account"}
         </button>
       </form>
+      )}
 
+      {canManage && (
       <div className="card space-y-3">
         <h2 className="eyebrow">(02) Add many at once</h2>
         <p className="text-sm text-slate-400">
@@ -408,7 +476,8 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
           <button
             className="btn-secondary w-full sm:w-auto"
             onClick={emailAllVolunteers}
-            disabled={bulkRunning || !accounts.some((a) => a.role === "SCANNER")}
+            disabled={bulkRunning || !emailConfigured || !accounts.some((a) => a.role === "SCANNER")}
+            title={emailConfigured ? undefined : "No mail provider configured"}
           >
             Email new logins to all volunteers
           </button>
@@ -433,6 +502,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
           </div>
         )}
       </div>
+      )}
 
       <div className="card">
         <h2 className="eyebrow mb-3">(03) Accounts · {accounts.length}</h2>
@@ -445,15 +515,13 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-white">{a.name}</span>
-                    <span className={`badge ${a.role === "ADMIN" ? "bg-accent text-navy-950" : "bg-brand text-white"}`}>
-                      {a.role === "ADMIN" ? "Admin" : "Volunteer"}
-                    </span>
+                    <span className={`badge ${ROLE_BADGE[a.role]}`}>{ROLE_LABEL[a.role]}</span>
                     {isMe && <span className="badge border border-white/30 text-slate-300">You</span>}
                   </div>
                   <div className="truncate font-mono text-xs text-slate-400">{a.email}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {a.role === "SCANNER" && (
+                  {canManage && a.role === "SCANNER" && (
                     <select
                       className="input !w-auto !min-h-0 py-1.5 text-sm"
                       aria-label={`Track lock for ${a.name}`}
@@ -468,7 +536,7 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                       ))}
                     </select>
                   )}
-                  {!isMe && (
+                  {canManage && !isMe && (
                     <select
                       className="input !w-auto !min-h-0 py-1.5 text-sm"
                       aria-label={`Role for ${a.name}`}
@@ -477,27 +545,85 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                     >
                       <option value="SCANNER">Volunteer</option>
                       <option value="ADMIN">Admin</option>
+                      <option value="SUPER_ADMIN">Super admin</option>
                     </select>
                   )}
-                  <button className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => emailLogin(a)}>
-                    Email login
-                  </button>
-                  <button
-                    className={`btn-secondary !min-h-0 px-3 py-1.5 text-xs ${pwFor === a.id ? "!bg-white !text-navy-950" : ""}`}
-                    onClick={() => openPassword(a)}
-                    aria-expanded={pwFor === a.id}
-                  >
-                    {isMe ? "Change my password" : "New password"}
-                  </button>
-                  {!isMe && (
-                    <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
-                      Remove
-                    </button>
+                  {canManage && (
+                    <>
+                      <button
+                        className={`btn-secondary !min-h-0 px-3 py-1.5 text-xs ${editFor === a.id ? "!bg-white !text-navy-950" : ""}`}
+                        onClick={() => {
+                          const open = editFor === a.id;
+                          setEditFor(open ? null : a.id);
+                          setEditValue(open ? { name: "", email: "" } : { name: a.name, email: a.email });
+                          setError("");
+                        }}
+                        aria-expanded={editFor === a.id}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn-secondary !min-h-0 px-3 py-1.5 text-xs"
+                        onClick={() => emailLogin(a)}
+                        disabled={!emailConfigured}
+                        title={emailConfigured ? undefined : "No mail provider configured"}
+                      >
+                        Email login
+                      </button>
+                      <button
+                        className={`btn-secondary !min-h-0 px-3 py-1.5 text-xs ${pwFor === a.id ? "!bg-white !text-navy-950" : ""}`}
+                        onClick={() => openPassword(a)}
+                        aria-expanded={pwFor === a.id}
+                      >
+                        {isMe ? "Change my password" : "New password"}
+                      </button>
+                      {!isMe && (
+                        <button className="btn-danger !min-h-0 px-3 py-1.5 text-xs" onClick={() => remove(a)}>
+                          Remove
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
                 </div>
 
-                {pwFor === a.id && (
+                {canManage && editFor === a.id && (
+                  <form
+                    className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-accent/40 bg-navy-950 p-3"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      saveDetails(a);
+                    }}
+                  >
+                    <input
+                      className="input !min-h-0 w-full py-1.5 text-sm sm:w-48"
+                      autoFocus
+                      placeholder="Name"
+                      aria-label={`Name for ${a.name}`}
+                      value={editValue.name}
+                      onChange={(e) => setEditValue({ ...editValue, name: e.target.value })}
+                    />
+                    <input
+                      className="input !min-h-0 w-full py-1.5 text-sm sm:w-64"
+                      type="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      placeholder="Email"
+                      aria-label={`Email for ${a.name}`}
+                      value={editValue.email}
+                      onChange={(e) => setEditValue({ ...editValue, email: e.target.value })}
+                    />
+                    <button type="submit" className="btn-primary !min-h-0 px-3 py-1.5 text-xs">
+                      Save
+                    </button>
+                    <button type="button" className="btn-secondary !min-h-0 px-3 py-1.5 text-xs" onClick={() => setEditFor(null)}>
+                      Cancel
+                    </button>
+                  </form>
+                )}
+
+                {canManage && pwFor === a.id && (
                   <form
                     onSubmit={(e) => savePassword(a, e)}
                     className="mt-3 space-y-3 rounded-lg border border-accent/40 bg-navy-950 p-3 sm:p-4"
@@ -545,15 +671,17 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
                     <p className={`text-xs ${pwValue && pwValue.length < 8 ? "text-amber-300" : "text-slate-500"}`}>
                       {pwValue.length}/8 characters minimum. Their current password stops working once you save.
                     </p>
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
-                      <input
-                        type="checkbox"
-                        className="h-5 w-5 accent-accent"
-                        checked={pwEmail}
-                        onChange={(e) => setPwEmail(e.target.checked)}
-                      />
-                      Also email it to {isMe ? "me" : "them"} ({a.email})
-                    </label>
+                    {emailConfigured && (
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 accent-accent"
+                          checked={pwEmail}
+                          onChange={(e) => setPwEmail(e.target.checked)}
+                        />
+                        Also email it to {isMe ? "me" : "them"} ({a.email})
+                      </label>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       <button className="btn-primary w-full sm:w-auto" disabled={pwBusy || pwValue.length < 8}>
                         {pwBusy ? "Saving…" : pwEmail ? "Save & email" : "Save password"}
