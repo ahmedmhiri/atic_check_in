@@ -1,7 +1,7 @@
 # Event Attendance (Admin-only)
 
 Next.js 14 (App Router) + TypeScript admin tool for a 2-day, 4-track workshop event.
-Hotel check-in → per-slot workshop check-in → finalize & email certificates.
+Opening ceremony check-in → per-slot workshop check-in → finalize & email certificates.
 
 ## Stack
 - Next.js 14 App Router, TypeScript, Tailwind
@@ -25,13 +25,13 @@ Open http://localhost:3000 → sign in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PAS
 
 ## Flow
 1. **Import** (`/import`): upload `.xlsx`/`.csv` (columns `name`, `email`, `studentId`). QR tokens auto-generated; duplicates skipped. Download all QR codes as a ZIP, and/or **Email QR Codes** — each student gets their QR inline + as a PNG attachment (`POST /api/qr-email`, batched like Finalize; `Student.qrEmailSentAt` means re-running only emails newly imported students). A single student's QR can be (re)sent from their detail page.
-2. **Hotel scan** (`/scan/hotel`): scan a badge → idempotent hotel check-in, live arrivals counter.
+2. **Opening ceremony scan** (`/scan/hotel`): scan a badge → idempotent opening ceremony check-in, live counter.
 3. **Workshop scan** (`/scan/[trackId]`): pick the active time slot, then scan.
-   - Requires hotel check-in first.
+   - Requires opening ceremony check-in first.
    - First scan in a slot locks the student to that track *for that slot only* and sets `currentTrackId`.
    - Re-scan same session → "already scanned". Scan at a different track same slot → rejected.
    - **Start New Time Slot** button resets every `currentTrackId` to null (students free to re-choose).
-4. **Dashboard** (`/`): totals, hotel counts, live per-track occupancy, per-student drill-down (`/students/[id]`) with slot-by-slot history + manual override.
+4. **Dashboard** (`/`): totals, opening check-in counts, live per-track occupancy, per-student drill-down (`/students/[id]`) with slot-by-slot history + manual override.
 5. **Finalize** (dashboard button → `/api/finalize`): attendance % = distinct slots attended / total time slots. ≥ threshold → certificate email, else not-eligible notice. Rate-limited (~1.6/s) with retry + per-student log. Sends in ~40s batches (the button loops until done); `Student.resultEmailSentAt` marks who was emailed, so re-running only emails students not yet reached (and retries earlier failures). To re-send to someone, clear their `resultEmailSentAt` in Prisma Studio.
 
 **Tracks & time slots:** the program lives in `prisma/seed.ts` (`trackDefs` / `slotDefs`, Tunisia time, from the final planning). Edit it and run `npm run db:seed` — it (re)writes slot start/end times, which drive the scan window, PRESENT vs LATE and the scanner's "current slot" pre-selection, and removes tracks/slots no longer listed (it refuses if they already have scans, students or volunteers).
@@ -39,7 +39,7 @@ Open http://localhost:3000 → sign in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PAS
 ## API
 - `POST /api/import` — spreadsheet import
 - `GET  /api/qr` — ZIP of QR PNGs
-- `POST /api/checkin/hotel` — hotel check-in
+- `POST /api/checkin/hotel` — opening ceremony check-in (DB table is still `HotelCheckIn`)
 - `POST /api/checkin/[trackId]` — workshop check-in (`{ qrToken, timeSlotId, sessionOccurrenceId }`)
 - `POST /api/timeslots/reset` — reset `currentTrackId` (new slot begins)
 - `GET  /api/timeslots` — slots + session occurrences

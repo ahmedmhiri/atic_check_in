@@ -131,7 +131,7 @@ model Admin {
   email          String  @unique
   password       String // bcrypt hash
   role           Role     @default(ADMIN)
-  // For SCANNER accounts: if set, they may only scan this track (hotel desk still allowed).
+  // For SCANNER accounts: if set, they may only scan this track (opening ceremony desk still allowed).
   assignedTrackId String?
   assignedTrack  Track?  @relation(fields: [assignedTrackId], references: [id])
   createdAt      DateTime @default(now())

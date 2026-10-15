@@ -79,9 +79,9 @@ export default async function StudentPage({ params }: { params: { id: string } }
         <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:gap-4">
           <Metric label="Attendance" value={`${pct}%`} sub={`${attendedCount}/${totalSlots}`} />
           <Metric
-            label="Hotel"
+            label="Opening"
             value={student.hotelCheckIn ? "In" : "Out"}
-            sub={student.hotelCheckIn ? formatEventTime(student.hotelCheckIn.checkedInAt) : "not arrived"}
+            sub={student.hotelCheckIn ? formatEventTime(student.hotelCheckIn.checkedInAt) : "not checked in"}
           />
           <Metric label="Eligible" value={pct >= eligibilityThreshold() ? "Yes" : "No"} />
         </div>

@@ -47,15 +47,15 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {/* Colour blocks, like the mockup's ticket cards. */}
         <Card n="01" label="Imported" value={totalStudents} tone="bg-white text-navy-950" />
-        <Card n="02" label="Hotel checked-in" value={hotelCheckedIn} tone="bg-accent text-navy-950" />
-        <Card n="03" label="Not arrived" value={totalStudents - hotelCheckedIn} tone="border border-white/15 bg-navy-950 text-white" />
+        <Card n="02" label="Opening checked-in" value={hotelCheckedIn} tone="bg-accent text-navy-950" />
+        <Card n="03" label="Not checked in" value={totalStudents - hotelCheckedIn} tone="border border-white/15 bg-navy-950 text-white" />
         <Card n="04" label="Time slots" value={totalSlots} tone="bg-brand text-white" />
       </div>
 
       {totalStudents > 0 && (
         <div className="card">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="eyebrow">(01) Arrivals</h2>
+            <h2 className="eyebrow">(01) Opening ceremony check-in</h2>
             <span className="font-display text-2xl font-black text-white">
               {Math.round((hotelCheckedIn / totalStudents) * 100)}%
             </span>
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
               <tr>
                 <th className="hidden px-3 py-2 sm:table-cell">Student ID</th>
                 <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Hotel</th>
+                <th className="px-3 py-2">Opening</th>
                 <th className="hidden px-3 py-2 md:table-cell">Current Track</th>
                 <th className="px-3 py-2">Attended</th>
                 <th className="hidden px-3 py-2 sm:table-cell"></th>

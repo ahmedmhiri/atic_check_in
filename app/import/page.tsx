@@ -137,8 +137,8 @@ export default function ImportPage() {
 
       <EmailBatchCard
         endpoint="/api/day-email"
-        title="Event-Day Email: Choose Your Tracks"
-        description="Send on the morning of the event. Each student gets their personal Google Form link to choose a track for each session (binding — scans at any other track are rejected), their QR code and the program. Only students who haven't received it yet are emailed."
+        title="Event-Day Email: Choose Your Track"
+        description="Send on the morning of the event. Each student gets their personal Google Form link to choose one track for all 3 sessions (binding — scans at any other track are rejected), their QR code and the program. Only students who haven't received it yet are emailed."
         buttonLabel="Send Event-Day Email"
         confirmText="Email every student the event-day email with the track choice form? This sends real emails."
       />

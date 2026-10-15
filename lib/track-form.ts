@@ -46,10 +46,14 @@ export type ChoiceResult =
 
 /**
  * Apply one form submission. Questions are matched by their title
- * ("Email", "Personal code", "Session N …") and answers by "Track N …".
+ * ("Email", "Personal code", then "Track" or "Session N …") and answers by
+ * "Track N …". The current form asks one "Track" question that covers all
+ * sessions; per-session "Session N" questions are still understood.
  * A session's choice can no longer change once its scanning window opens, or
  * once the student has been scanned in it — otherwise a student turned away
- * at the door could just re-submit the form.
+ * at the door could just re-submit the form. With the single "Track" question,
+ * a track that is already final for one session can't be swapped for the
+ * others either, so the student keeps one track for the whole congress.
  */
 export async function applyTrackChoices(answers: FormAnswer[], now = Date.now()) {
   const get = (re: RegExp) => answers.find((a) => re.test(a.title.trim()))?.response.trim() ?? "";
@@ -70,35 +74,59 @@ export async function applyTrackChoices(answers: FormAnswer[], now = Date.now())
     prisma.track.findMany({ select: { id: true, name: true } }),
   ]);
 
+  const trackFor = (response: string) => {
+    const tm = response.trim().match(/^track\s*(\d+)/i);
+    return tm ? tracks.find((t) => new RegExp(`^track\\s*${tm[1]}\\b`, "i").test(t.name)) : undefined;
+  };
+  const oneTrack = answers.some((a) => /^track\b/i.test(a.title.trim()));
+  const picks = answers.flatMap((a) => {
+    const title = a.title.trim();
+    if (/^track\b/i.test(title)) return slots.map((_, i) => ({ session: i + 1, response: a.response }));
+    const sm = title.match(/^session\s*(\d+)/i);
+    return sm ? [{ session: Number(sm[1]), response: a.response }] : [];
+  });
+
+  const plan = await Promise.all(
+    picks.map(async ({ session, response }) => {
+      const slot = slots[session - 1];
+      const track = trackFor(response);
+      if (!slot || !track) return { session, slot, track };
+      const current = await prisma.slotSelection.findUnique({
+        where: { studentId_timeSlotId: { studentId: student.id, timeSlotId: slot.id } },
+        include: { track: { select: { name: true } } },
+      });
+      const closed = now >= slotWindow(slot.startTime, slot.endTime).opens;
+      const attended = closed
+        ? 0
+        : await prisma.attendanceRecord.count({
+            where: { studentId: student.id, sessionOccurrence: { timeSlotId: slot.id } },
+          });
+      return { session, slot, track, current, closed, attended: attended > 0 };
+    })
+  );
+
+  // One track for the whole congress: if it's already final as another track
+  // for some session, don't move the remaining sessions either.
+  const locked = oneTrack
+    ? plan.find((p) => p.track && p.current && p.current.trackId !== p.track.id && (p.closed || p.attended))
+    : undefined;
+
   const results: ChoiceResult[] = [];
-  for (const a of answers) {
-    const sm = a.title.trim().match(/^session\s*(\d+)/i);
-    if (!sm) continue;
-    const session = Number(sm[1]);
-    const slot = slots[session - 1];
-    const tm = a.response.trim().match(/^track\s*(\d+)/i);
-    const track = tm ? tracks.find((t) => new RegExp(`^track\\s*${tm[1]}\\b`, "i").test(t.name)) : undefined;
+  for (const p of plan) {
+    const { session, slot, track, current } = p;
     if (!slot || !track) {
       results.push({ session, status: "unknown" });
       continue;
     }
-
-    const current = await prisma.slotSelection.findUnique({
-      where: { studentId_timeSlotId: { studentId: student.id, timeSlotId: slot.id } },
-      include: { track: { select: { name: true } } },
-    });
     if (current?.trackId === track.id) {
       results.push({ session, status: "unchanged", track: track.name });
       continue;
     }
-    if (now >= slotWindow(slot.startTime, slot.endTime).opens) {
+    if (p.closed || (locked && !p.attended)) {
       results.push({ session, status: "closed", track: current?.track.name });
       continue;
     }
-    const attended = await prisma.attendanceRecord.count({
-      where: { studentId: student.id, sessionOccurrence: { timeSlotId: slot.id } },
-    });
-    if (attended) {
+    if (p.attended) {
       results.push({ session, status: "attended", track: current?.track.name });
       continue;
     }

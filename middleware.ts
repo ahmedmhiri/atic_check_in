@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 
 // Everything a volunteer (SCANNER) account may reach. Anything else is admin-only.
 const SCANNER_ALLOWED = [
-  /^\/scan(\/|$)/, // scan hub, hotel desk, track scanners
-  /^\/api\/checkin\//, // hotel + workshop check-in
+  /^\/scan(\/|$)/, // scan hub, opening ceremony desk, track scanners
+  /^\/api\/checkin\//, // opening ceremony + workshop check-in
   /^\/api\/timeslots$/, // slot list for the track scanner (not /reset)
-  /^\/api\/stats$/, // live arrival counts on the hotel page
+  /^\/api\/stats$/, // live counts on the opening ceremony page
 ];
 
 // Account management — creating accounts, changing roles, setting or resetting

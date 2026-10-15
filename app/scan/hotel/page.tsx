@@ -6,7 +6,7 @@ import ScanResult, { ScanTone } from "@/components/ScanResult";
 
 type Result = { status: string; message: string; at: number } | null;
 
-export default function HotelScanPage() {
+export default function OpeningScanPage() {
   const [result, setResult] = useState<Result>(null);
   const [busy, setBusy] = useState(false);
   const [stats, setStats] = useState<{ hotelCheckedIn: number; notArrived: number; totalStudents: number } | null>(null);
@@ -63,7 +63,7 @@ export default function HotelScanPage() {
   return (
     <div className="mx-auto max-w-lg space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-2xl sm:text-3xl">Hotel Check-In</h1>
+        <h1 className="text-2xl sm:text-3xl">Opening Ceremony Check-In</h1>
         {stats && (
           <span className="text-sm text-slate-400">
             <b className="text-emerald-400">{stats.hotelCheckedIn}</b> / {stats.totalStudents} arrived
@@ -76,10 +76,10 @@ export default function HotelScanPage() {
       <QrScanner onScan={handleScan} paused={busy} />
 
       <div className="card">
-        <h2 className="mb-3 eyebrow">Live Arrivals</h2>
+        <h2 className="mb-3 eyebrow">Live Check-Ins</h2>
         {stats ? (
           <div className="grid grid-cols-3 gap-2 text-center sm:gap-3">
-            <Stat label="Arrived" value={stats.hotelCheckedIn} tone="text-emerald-400" />
+            <Stat label="Checked in" value={stats.hotelCheckedIn} tone="text-emerald-400" />
             <Stat label="Not yet" value={stats.notArrived} tone="text-amber-300" />
             <Stat label="Total" value={stats.totalStudents} tone="text-slate-100" />
           </div>

@@ -12,7 +12,7 @@ export default function DeleteStudentButton({ id, name, studentId }: { id: strin
   async function remove() {
     // Type-to-confirm: a single tap on a phone shouldn't be enough to wipe someone.
     const typed = prompt(
-      `Delete ${name} (${studentId})?\n\nThis permanently removes their hotel check-in, track choices and attendance. It cannot be undone.\n\nType the student ID to confirm:`
+      `Delete ${name} (${studentId})?\n\nThis permanently removes their opening ceremony check-in, track choices and attendance. It cannot be undone.\n\nType the student ID to confirm:`
     );
     if (typed === null) return;
     if (typed.trim() !== studentId) {

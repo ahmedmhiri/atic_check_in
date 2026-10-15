@@ -253,7 +253,7 @@ export async function sendQrEmail({ name, email, studentId, qrToken }: QrEmailDa
     </table>
     <p style="margin:0 0 6px"><strong>Show this QR code:</strong></p>
     <ul style="margin:0 0 16px;padding-left:20px">
-      <li>at the hotel check-in desk when you arrive, and</li>
+      <li>at the opening ceremony check-in when you arrive, and</li>
       <li>at the door of every workshop session you attend (attendance counts toward your certificate).</li>
     </ul>
     <p style="margin:0 0 16px"><strong>Tips:</strong> take a screenshot of the QR code so you have it offline (if it doesn't appear, tap <em>Display images</em> at the top of this email),
@@ -261,7 +261,7 @@ export async function sendQrEmail({ name, email, studentId, qrToken }: QrEmailDa
     <p style="margin:0 0 16px;color:#b45309">This code is personal — please don't share it.</p>
     <p style="margin:24px 0 0">See you there,<br/>The ATIC Team</p>
   `);
-  const text = `Hi ${name}, here is your personal check-in QR code for ATIC 2.0 (Student ID: ${studentId}). Open this email with images turned on to see it. Show it at hotel check-in and at the door of every workshop session. Save a screenshot and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
+  const text = `Hi ${name}, here is your personal check-in QR code for ATIC 2.0 (Student ID: ${studentId}). Open this email with images turned on to see it. Show it at the opening ceremony check-in and at the door of every workshop session. Save a screenshot and turn brightness up when scanning. Please don't share it. — The ATIC Team`;
 
   return deliver({
     to: email,
@@ -303,7 +303,7 @@ export async function sendLoginEmail({ name, email, password, role, trackName }:
     : isAdmin
     ? "You have <strong>admin</strong> access to the ATIC 2.0 check-in app (dashboard, imports, scanners and team). Only a super admin can change accounts or passwords."
     : `You're a <strong>volunteer scanner</strong> for ATIC 2.0. You'll use the app to scan participants' QR codes${
-        trackName ? ` at the <strong>${escapeHtml(trackName)}</strong> door and the hotel desk` : " at the hotel desk and workshop doors"
+        trackName ? ` at the <strong>${escapeHtml(trackName)}</strong> door and the opening ceremony desk` : " at the opening ceremony desk and workshop doors"
       }.`;
   const row = (label: string, value: string) =>
     `<tr><td style="padding:6px 12px 6px 0;color:#5a5a6e;font-size:13px;white-space:nowrap">${label}</td><td style="padding:6px 0;font-family:Courier New,monospace;font-size:15px;font-weight:700;color:#0b0b12">${value}</td></tr>`;
@@ -353,7 +353,7 @@ export async function sendDayEmail(data: DayEmailData) {
 }
 
 export function dayEmailTemplate({ name, studentId, qrToken, formUrl }: DayEmailData) {
-  const subject = "ATIC 2.0 — choose your tracks + today's program";
+  const subject = "ATIC 2.0 — choose your track + today's program";
   const base = publicBaseUrl();
   const qrUrl = base ? `${base}/q/${qrToken}.png` : null;
   const url = escapeHtml(formUrl);
@@ -379,21 +379,21 @@ export function dayEmailTemplate({ name, studentId, qrToken, formUrl }: DayEmail
 
   const html = layout(`
     <h2 style="color:#2A2FE0;${H2}">Welcome to ATIC 2.0, ${escapeHtml(name)}!</h2>
-    <p style="margin:0 0 16px">The congress starts today at <strong>${escapeHtml(venue)}</strong>. There are 3 track sessions and 4 tracks running in parallel in each one — pick yours now:</p>
+    <p style="margin:0 0 16px">The congress starts today at <strong>${escapeHtml(venue)}</strong>. There are 4 tracks running in parallel. Pick one — you'll follow it for all 3 track sessions:</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td align="center" style="padding:4px 0 12px">
-        <a href="${url}" style="display:inline-block;background-color:#2A2FE0;color:#ffffff;font-family:${FONT};font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px">Choose my tracks &rarr;</a>
+        <a href="${url}" style="display:inline-block;background-color:#2A2FE0;color:#ffffff;font-family:${FONT};font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px">Choose my track &rarr;</a>
       </td></tr>
     </table>
     <ul style="margin:0 0 16px;padding-left:20px">
-      <li><strong>Your choice is binding:</strong> at each session you'll only be scanned in at the door of the track you chose.</li>
-      <li>You can change your answer until <strong>30 minutes before</strong> each session starts. After that it's final.</li>
-      <li>Didn't choose? The first track door you're scanned at locks you in for that session.</li>
+      <li><strong>Your choice is binding:</strong> at all 3 sessions you'll only be scanned in at the door of the track you chose.</li>
+      <li>You can change your answer until <strong>30 minutes before</strong> session 1 starts (Saturday 13:30). After that it's final.</li>
+      <li>Didn't choose? The first track door you're scanned at locks you in for the rest of the congress.</li>
     </ul>
     <p style="margin:0 0 6px"><strong>The tracks:</strong></p>
     <ul style="margin:0 0 16px;padding-left:20px">${trackRooms.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>
 
-    <p style="margin:20px 0 8px"><strong>Your check-in QR code</strong> — show it at the hotel desk and at every track door:</p>
+    <p style="margin:20px 0 8px"><strong>Your check-in QR code</strong> — show it at the opening ceremony check-in and at every track door:</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td align="center" style="padding:4px 0 8px">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
@@ -416,13 +416,13 @@ export function dayEmailTemplate({ name, studentId, qrToken, formUrl }: DayEmail
     .join("\n\n");
   const text = `Welcome to ATIC 2.0, ${name}!
 
-Choose your track for each of the 3 track sessions: ${formUrl}
-Your choice is binding — you'll only be scanned in at the track you chose. You can change it until 30 minutes before each session; if you don't choose, the first track door you're scanned at locks you in.
+Choose your track — you'll follow it for all 3 track sessions: ${formUrl}
+Your choice is binding — you'll only be scanned in at the track you chose. You can change it until 30 minutes before session 1 (Saturday 13:30); if you don't choose, the first track door you're scanned at locks you in for the rest of the congress.
 
 Tracks:
 ${trackRooms.map((t) => `  - ${t}`).join("\n")}
 
-Show your check-in QR code (Student ID ${studentId}) at the hotel desk and every track door.
+Show your check-in QR code (Student ID ${studentId}) at the opening ceremony check-in and every track door.
 
 ${programText}
 

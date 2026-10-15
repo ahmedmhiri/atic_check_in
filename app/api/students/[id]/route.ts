@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/guard";
 export const runtime = "nodejs";
 
 // DELETE /api/students/[id]
-// Permanently removes the student. Their slot selections, hotel check-in and
+// Permanently removes the student. Their slot selections, opening check-in and
 // attendance records go with them (onDelete: Cascade in the schema).
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {

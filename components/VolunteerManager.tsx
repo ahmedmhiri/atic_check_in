@@ -423,7 +423,7 @@ export default function VolunteerManager({
           </div>
         </div>
         <p className="text-xs text-slate-400">
-          <b className="text-slate-200">Volunteers</b> can only use the Scan pages (hotel desk + workshop scanners).{" "}
+          <b className="text-slate-200">Volunteers</b> can only use the Scan pages (opening ceremony desk + workshop scanners).{" "}
           <b className="text-slate-200">Admins</b> run the event: dashboard, imports, scanners, certificates and student
           records. <b className="text-slate-200">Super admins</b> also manage this page — adding accounts, changing roles
           and setting passwords.

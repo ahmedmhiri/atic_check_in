@@ -69,7 +69,7 @@ export async function POST(
     );
   }
 
-  // Look up student and hotel status.
+  // Look up student and opening ceremony check-in status.
   const student = await prisma.student.findUnique({
     where: { qrToken },
     include: { hotelCheckIn: true },
@@ -78,10 +78,10 @@ export async function POST(
     return NextResponse.json({ status: "error", message: "Invalid QR — student not found" }, { status: 404 });
   }
 
-  // Stage 1 gate: must have hotel check-in first.
+  // Stage 1 gate: must have checked in at the opening ceremony first.
   if (!student.hotelCheckIn) {
     return NextResponse.json(
-      { status: "rejected", message: `${student.name} has not completed hotel check-in yet` },
+      { status: "rejected", message: `${student.name} has not checked in at the opening ceremony yet` },
       { status: 409 }
     );
   }
@@ -108,7 +108,9 @@ export async function POST(
     });
     if (existing) return { kind: "duplicate" as const };
 
-    // First scan in this slot locks the student to this track FOR THIS SLOT.
+    // First scan in this slot locks the student to this track for this slot —
+    // and, since students keep one track for the whole congress, for every
+    // later slot they haven't chosen yet.
     if (!selection) {
       try {
         await prisma.slotSelection.create({ data: { studentId: student.id, timeSlotId, trackId } });
@@ -118,6 +120,14 @@ export async function POST(
         const winner = await prisma.slotSelection.findUnique({ where: selWhere, include: { track: true } });
         if (winner && winner.trackId !== trackId) return { kind: "wrong_track" as const, otherTrack: winner.track.name };
       }
+      const later = await prisma.timeSlot.findMany({
+        where: { startTime: { gt: occ.timeSlot.startTime } },
+        select: { id: true },
+      });
+      await prisma.slotSelection.createMany({
+        data: later.map((s) => ({ studentId: student.id, timeSlotId: s.id, trackId })),
+        skipDuplicates: true,
+      });
     }
 
     let rec;

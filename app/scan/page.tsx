@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // Scanner hub: big tap targets so volunteers on phones reach their scanner in one tap.
 export default async function ScanHubPage() {
   const session = await getServerSession(authOptions);
-  // A volunteer locked to one track only sees that track (plus the hotel desk).
+  // A volunteer locked to one track only sees that track (plus the opening ceremony desk).
   const locked = session?.user?.role === "SCANNER" ? session.user.assignedTrackId : null;
   const tracks = await prisma.track.findMany({
     where: locked ? { id: locked } : undefined,
@@ -29,8 +29,8 @@ export default async function ScanHubPage() {
         href="/scan/hotel"
         className="block rounded-lg bg-accent p-5 text-navy-950 shadow-block transition hover:-translate-y-0.5 active:translate-y-0"
       >
-        <div className="font-mono text-[11px] font-semibold opacity-70">/01 · Arrival desk</div>
-        <div className="mt-1 font-display text-2xl font-black uppercase">Hotel check-in ↗</div>
+        <div className="font-mono text-[11px] font-semibold opacity-70">/01 · Opening ceremony</div>
+        <div className="mt-1 font-display text-2xl font-black uppercase">Opening ceremony check-in ↗</div>
       </Link>
 
       <div>

@@ -56,7 +56,7 @@ export default function StudentOverride({
             disabled={busy}
             onChange={(e) => call({ action: "setHotel", studentId, checkedIn: e.target.checked })}
           />
-          Hotel checked in
+          Checked in at opening ceremony
         </label>
       </div>
 
