@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     }),
     attendedSlotCounts(),
     prisma.timeSlot.findMany({ orderBy: [{ day: "asc" }, { order: "asc" }], select: { id: true, label: true } }),
-    // Track chosen per session: from the Google Form, or locked in by the first scan.
+    // Track chosen per session (one track for all sessions): from the Google Form, or locked in by the first scan.
     prisma.slotSelection.groupBy({ by: ["timeSlotId", "trackId"], _count: { _all: true } }),
   ]);
   const chosen = (slotId: string, trackId: string) =>
@@ -87,32 +87,48 @@ export default async function DashboardPage() {
         <div className="card">
           <h2 className="eyebrow mb-1">(03) Track choices</h2>
           <p className="mb-3 text-xs text-slate-400">
-            Students locked to each track per session — chosen on the Google Form or by their first scan.
+            Students per track. Each student follows one track for all 3 sessions, chosen on the Google Form or at their
+            first track scan.
           </p>
           <div className="overflow-x-auto rounded-lg border border-white/10">
             <table className="w-full text-sm">
               <thead className="bg-navy-900 text-left font-mono text-[11px] uppercase tracking-wider text-mist">
                 <tr>
-                  <th className="px-3 py-2">Session</th>
-                  {tracks.map((t) => (
-                    <th key={t.id} className="px-3 py-2">{t.name}</th>
+                  <th className="px-3 py-2">Track</th>
+                  {slots.map((sl) => (
+                    <th key={sl.id} className="px-2 py-2 text-center" title={sl.label}>
+                      {/* "Session 1 · Sat 14:00" → "S1" with the time below */}
+                      {sl.label.split(" · ")[0].replace(/^session\s*/i, "S")}
+                      <span className="block whitespace-nowrap normal-case tracking-normal text-slate-500">
+                        {sl.label.split(" · ").slice(1).join(" · ")}
+                      </span>
+                    </th>
                   ))}
-                  <th className="px-3 py-2">Not chosen</th>
                 </tr>
               </thead>
               <tbody>
-                {slots.map((sl) => {
-                  const total = tracks.reduce((n, t) => n + chosen(sl.id, t.id), 0);
+                {tracks.map((t) => {
+                  const [num, ...topic] = t.name.split(" · ");
                   return (
-                    <tr key={sl.id} className="border-t border-white/5">
-                      <td className="whitespace-nowrap px-3 py-1.5 text-white">{sl.label}</td>
-                      {tracks.map((t) => (
-                        <td key={t.id} className="px-3 py-1.5 font-mono">{chosen(sl.id, t.id)}</td>
+                    <tr key={t.id} className="border-t border-white/5">
+                      <td className="px-3 py-1.5">
+                        <span className="font-semibold text-white">{num}</span>
+                        {topic.length > 0 && <span className="block text-xs text-slate-400 sm:ml-2 sm:inline">{topic.join(" · ")}</span>}
+                      </td>
+                      {slots.map((sl) => (
+                        <td key={sl.id} className="px-2 py-1.5 text-center font-mono">{chosen(sl.id, t.id)}</td>
                       ))}
-                      <td className="px-3 py-1.5 font-mono text-slate-500">{Math.max(totalStudents - total, 0)}</td>
                     </tr>
                   );
                 })}
+                <tr className="border-t border-white/10 text-slate-500">
+                  <td className="px-3 py-1.5">Not chosen yet</td>
+                  {slots.map((sl) => (
+                    <td key={sl.id} className="px-2 py-1.5 text-center font-mono">
+                      {Math.max(totalStudents - tracks.reduce((n, t) => n + chosen(sl.id, t.id), 0), 0)}
+                    </td>
+                  ))}
+                </tr>
               </tbody>
             </table>
           </div>
