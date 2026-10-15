@@ -28,73 +28,86 @@ async function main() {
     console.log("SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD not set — skipping admin seed.");
   }
 
-  // ---- Seed 4 parallel workshop tracks ----
-  const trackNames = ["Track A", "Track B", "Track C", "Track D"];
-  const tracks = [];
-  for (const tName of trackNames) {
-    const t = await prisma.track.upsert({
-      where: { name: tName },
-      update: {},
-      create: { name: tName },
-    });
-    tracks.push(t);
-  }
-  console.log(`Tracks ready: ${trackNames.join(", ")}`);
-
-  // ---- Seed time slots (2 days x 2 slots = 4 total) ----
-  // Times are wall-clock hours at the venue. EVENT_DAY1_DATE (YYYY-MM-DD) and
-  // EVENT_UTC_OFFSET (e.g. +01:00) pin them to real instants; LATE detection
-  // depends on these being correct. When set, existing slots are updated too.
-  const day1 = process.env.EVENT_DAY1_DATE;
-  const offset = process.env.EVENT_UTC_OFFSET ?? "+00:00";
-  if (day1 && !/^\d{4}-\d{2}-\d{2}$/.test(day1)) throw new Error(`EVENT_DAY1_DATE must be YYYY-MM-DD, got "${day1}"`);
-  if (!/^[+-]\d{2}:\d{2}$/.test(offset)) throw new Error(`EVENT_UTC_OFFSET must look like +01:00, got "${offset}"`);
-  if (!day1) console.warn("EVENT_DAY1_DATE not set — new slots get placeholder dates and existing slot times are left untouched.");
-
-  const slotInstant = (day: number, hour: number) => {
-    const d = new Date(`${day1 ?? "2026-01-01"}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + (day - 1));
-    const date = d.toISOString().slice(0, 10);
-    const t = new Date(`${date}T${String(hour).padStart(2, "0")}:00:00${day1 ? offset : "Z"}`);
-    if (isNaN(t.getTime())) throw new Error(`Invalid slot time for day ${day} ${hour}:00`);
-    return t;
-  };
-  const slotDefs = [
-    { day: 1, label: "Day 1 - Morning", order: 1, sh: 9, eh: 12 },
-    { day: 1, label: "Day 1 - Afternoon", order: 2, sh: 13, eh: 16 },
-    { day: 2, label: "Day 2 - Morning", order: 3, sh: 9, eh: 12 },
-    { day: 2, label: "Day 2 - Afternoon", order: 4, sh: 13, eh: 16 },
+  // ---- ATIC 2.0 program (final planning, same as the congress website) ----
+  // 4 parallel tracks x 3 track sessions. Times are Tunisia wall clock (UTC+1)
+  // and drive the scan window, PRESENT vs LATE and the scanner's slot pre-select.
+  const trackDefs = [
+    "Track 1 · Cyber Security",
+    "Track 2 · Artificial Intelligence",
+    "Track 3 · AI in Healthcare",
+    "Track 4 · IEEE",
   ];
+  const slotDefs = [
+    { day: 1, order: 1, label: "Session 1 · Sat 14:00", start: "2026-10-17T14:00:00+01:00", end: "2026-10-17T15:30:00+01:00" },
+    { day: 1, order: 2, label: "Session 2 · Sat 16:30", start: "2026-10-17T16:30:00+01:00", end: "2026-10-17T18:00:00+01:00" },
+    { day: 2, order: 3, label: "Session 3 · Sun 09:00", start: "2026-10-18T09:00:00+01:00", end: "2026-10-18T11:30:00+01:00" },
+  ];
+  // Who runs each track in each session ([track][session]); shown on the scanner.
+  const caravan = "IEEE CS R8 AI Caravan Tunisia Team";
+  const leads = [
+    ["Wajih Letaief", "Mohamed Hamdi Ouerdi", "Wajih Letaief"],
+    ["Imen Selmi", "Imen Selmi", "Imen Selmi"],
+    [caravan, caravan, caravan],
+    ["SIGHT Tunisia Section", "SIGHT Tunisia Section", "Leadership · Baya Bouchaala"],
+  ];
+
+  // Remove tracks/slots that are no longer in the program (e.g. the old
+  // Track A–D placeholders) — but never anything that already holds real data.
+  const staleTracks = await prisma.track.findMany({
+    where: { name: { notIn: trackDefs } },
+    include: { _count: { select: { slotSelections: true, currentStudents: true, scannerAdmins: true } } },
+  });
+  const staleSlots = await prisma.timeSlot.findMany({
+    where: { label: { notIn: slotDefs.map((s) => s.label) } },
+    include: { _count: { select: { slotSelections: true } } },
+  });
+  const staleOccWhere = {
+    OR: [{ trackId: { in: staleTracks.map((t) => t.id) } }, { timeSlotId: { in: staleSlots.map((s) => s.id) } }],
+  };
+  const staleAttendance = await prisma.attendanceRecord.count({ where: { sessionOccurrence: staleOccWhere } });
+  const inUse = [
+    ...staleTracks.filter((t) => t._count.slotSelections || t._count.currentStudents || t._count.scannerAdmins).map((t) => t.name),
+    ...staleSlots.filter((s) => s._count.slotSelections).map((s) => s.label),
+  ];
+  if (inUse.length || staleAttendance) {
+    throw new Error(
+      `Not removing old tracks/slots that already have scans, students or volunteers: ${inUse.join(", ") || `${staleAttendance} attendance records`}`
+    );
+  }
+  if (staleTracks.length || staleSlots.length) {
+    await prisma.sessionOccurrence.deleteMany({ where: staleOccWhere });
+    await prisma.track.deleteMany({ where: { id: { in: staleTracks.map((t) => t.id) } } });
+    await prisma.timeSlot.deleteMany({ where: { id: { in: staleSlots.map((s) => s.id) } } });
+    console.log(`Removed old: ${[...staleTracks.map((t) => t.name), ...staleSlots.map((s) => s.label)].join(", ")}`);
+  }
+
+  const tracks = [];
+  for (const tName of trackDefs) {
+    tracks.push(await prisma.track.upsert({ where: { name: tName }, update: {}, create: { name: tName } }));
+  }
+  console.log(`Tracks ready: ${trackDefs.join(", ")}`);
 
   const slots = [];
   for (const s of slotDefs) {
-    // upsert-by-label is not unique in schema; find-or-create manually
-    const startTime = slotInstant(s.day, s.sh);
-    const endTime = slotInstant(s.day, s.eh);
-    let slot = await prisma.timeSlot.findFirst({ where: { label: s.label } });
-    if (!slot) {
-      slot = await prisma.timeSlot.create({
-        data: { day: s.day, label: s.label, startTime, endTime, order: s.order },
-      });
-    } else if (day1) {
-      slot = await prisma.timeSlot.update({ where: { id: slot.id }, data: { startTime, endTime } });
-    }
+    // label is not unique in the schema; find-or-create manually
+    const data = { day: s.day, label: s.label, order: s.order, startTime: new Date(s.start), endTime: new Date(s.end) };
+    const existing = await prisma.timeSlot.findFirst({ where: { label: s.label } });
+    const slot = existing
+      ? await prisma.timeSlot.update({ where: { id: existing.id }, data })
+      : await prisma.timeSlot.create({ data });
     slots.push(slot);
     console.log(`  ${slot.label}: ${slot.startTime.toISOString()} → ${slot.endTime.toISOString()}`);
   }
   console.log(`Time slots ready: ${slots.length}`);
 
-  // ---- Seed a SessionOccurrence per (track, slot) ----
-  for (const slot of slots) {
-    for (const track of tracks) {
+  // ---- A SessionOccurrence per (track, slot) ----
+  for (const [si, slot] of slots.entries()) {
+    for (const [ti, track] of tracks.entries()) {
+      const title = `${track.name} — ${leads[ti][si]}`;
       await prisma.sessionOccurrence.upsert({
         where: { trackId_timeSlotId: { trackId: track.id, timeSlotId: slot.id } },
-        update: {},
-        create: {
-          trackId: track.id,
-          timeSlotId: slot.id,
-          title: `${track.name} — ${slot.label}`,
-        },
+        update: { title },
+        create: { trackId: track.id, timeSlotId: slot.id, title },
       });
     }
   }

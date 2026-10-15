@@ -17,7 +17,7 @@ Hotel check-in → per-slot workshop check-in → finalize & email certificates.
 npm install
 cp .env.example .env          # fill in DATABASE_URL, DIRECT_URL, NEXTAUTH_SECRET, RESEND_API_KEY, EMAIL_FROM, SEED_ADMIN_*
 npm run db:push               # create tables in Supabase
-npm run db:seed               # create admin + 4 tracks + 4 time slots + session occurrences
+npm run db:seed               # create admin + the ATIC 2.0 program (4 tracks x 3 sessions)
 npm run dev
 ```
 
@@ -34,7 +34,7 @@ Open http://localhost:3000 → sign in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PAS
 4. **Dashboard** (`/`): totals, hotel counts, live per-track occupancy, per-student drill-down (`/students/[id]`) with slot-by-slot history + manual override.
 5. **Finalize** (dashboard button → `/api/finalize`): attendance % = distinct slots attended / total time slots. ≥ threshold → certificate email, else not-eligible notice. Rate-limited (~1.6/s) with retry + per-student log. Sends in ~40s batches (the button loops until done); `Student.resultEmailSentAt` marks who was emailed, so re-running only emails students not yet reached (and retries earlier failures). To re-send to someone, clear their `resultEmailSentAt` in Prisma Studio.
 
-**Time slots:** set `EVENT_DAY1_DATE` + `EVENT_UTC_OFFSET` in `.env` and run `npm run db:seed` — it (re)writes slot start/end times, which drive PRESENT vs LATE and the scanner's "current slot" pre-selection.
+**Tracks & time slots:** the program lives in `prisma/seed.ts` (`trackDefs` / `slotDefs`, Tunisia time, from the final planning). Edit it and run `npm run db:seed` — it (re)writes slot start/end times, which drive the scan window, PRESENT vs LATE and the scanner's "current slot" pre-selection, and removes tracks/slots no longer listed (it refuses if they already have scans, students or volunteers).
 
 ## API
 - `POST /api/import` — spreadsheet import

@@ -28,7 +28,7 @@ Paste those two values into your local `.env` (replace the placeholders), then:
 
 ```powershell
 npm run db:push      # creates all tables in Supabase
-npm run db:seed      # creates admin + 4 tracks + 4 time slots + sessions
+npm run db:seed      # creates admin + the ATIC 2.0 program (4 tracks x 3 sessions)
 ```
 
 Login credentials come from `.env` (`SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`).

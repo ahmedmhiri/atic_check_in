@@ -36,11 +36,16 @@ interface BulkResult {
   msg: string;
 }
 
-/** "Track B" / "b" / "any" -> track id (null = any track). undefined = no match. */
+/** "Track 2" / "2" / "cyber security" / full name / "any" -> track id (null = any track). undefined = no match. */
 function matchTrack(v: string, tracks: Track[]): string | null | undefined {
   const norm = (x: string) => x.toLowerCase().replace(/^track\s*/, "").trim();
   if (!v || /^(any|all|-)$/i.test(v)) return null;
-  return tracks.find((t) => norm(t.name) === norm(v))?.id;
+  const want = norm(v);
+  // "Track 1 · Cyber Security" matches "1", "Track 1", "cyber security" or the full name.
+  return tracks.find((t) => {
+    const [num, ...rest] = norm(t.name).split("·").map((x) => x.trim());
+    return want === norm(t.name) || want === num || (rest.length > 0 && want === rest.join(" · "));
+  })?.id;
 }
 
 async function api(url: string, method: string, body?: unknown) {
@@ -379,14 +384,14 @@ export default function VolunteerManager({ accounts, tracks, meId }: { accounts:
         <h2 className="eyebrow">(02) Add many at once</h2>
         <p className="text-sm text-slate-400">
           One person per line: <span className="font-mono text-slate-200">name, email, track</span>. Track is optional
-          (<span className="font-mono">A</span>, <span className="font-mono">Track B</span>, or leave empty for any track); write{" "}
+          (<span className="font-mono">1</span>, <span className="font-mono">Track 2</span>, or leave empty for any track); write{" "}
           <span className="font-mono">admin</span> instead of a track for an admin. Each person gets their own random password.
         </p>
         <textarea
           className="input min-h-[8rem] font-mono"
           value={bulkText}
           onChange={(e) => setBulkText(e.target.value)}
-          placeholder={"Amira Ben Salah, amira@gmail.com, Track A\nYoussef Sahnoun, youssef@gmail.com, B\nSara Trabelsi, sara@gmail.com, admin"}
+          placeholder={"Amira Ben Salah, amira@gmail.com, Track 1\nYoussef Sahnoun, youssef@gmail.com, 2\nSara Trabelsi, sara@gmail.com, admin"}
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
