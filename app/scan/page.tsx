@@ -29,8 +29,8 @@ export default async function ScanHubPage() {
         href="/scan/hotel"
         className="block rounded-lg bg-accent p-5 text-navy-950 shadow-block transition hover:-translate-y-0.5 active:translate-y-0"
       >
-        <div className="font-mono text-[11px] font-semibold opacity-70">/01 · Opening ceremony</div>
-        <div className="mt-1 font-display text-2xl font-black uppercase">Opening ceremony check-in ↗</div>
+        <div className="font-mono text-[11px] font-semibold opacity-70">/01 · Check-in desk</div>
+        <div className="mt-1 font-display text-2xl font-black uppercase">Opening ceremony ↗</div>
       </Link>
 
       <div>

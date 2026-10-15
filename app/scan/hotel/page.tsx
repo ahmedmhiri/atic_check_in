@@ -62,13 +62,16 @@ export default function OpeningScanPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-2xl sm:text-3xl">Opening Ceremony Check-In</h1>
-        {stats && (
-          <span className="text-sm text-slate-400">
-            <b className="text-emerald-400">{stats.hotelCheckedIn}</b> / {stats.totalStudents} arrived
-          </span>
-        )}
+      <div>
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-mist">[ Check-in desk ]</p>
+        <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h1 className="text-2xl sm:text-3xl">Opening Ceremony</h1>
+          {stats && (
+            <span className="whitespace-nowrap text-sm text-slate-400">
+              <b className="text-emerald-400">{stats.hotelCheckedIn}</b> / {stats.totalStudents} checked in
+            </span>
+          )}
+        </div>
       </div>
 
       <ScanResult result={result} tone={tone} idleText="Point the camera at a student's QR badge." />
