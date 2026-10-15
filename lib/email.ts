@@ -3,6 +3,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { promises as dns } from "dns";
 import { eligibilityThreshold } from "@/lib/config";
 import { qrPngBuffer } from "@/lib/qr";
+import { program, trackRooms, venue } from "@/lib/program";
 
 // ---- Provider selection ----
 // SMTP (e.g. a Gmail account + App Password, ~500 emails/day) when SMTP_HOST is
@@ -323,4 +324,102 @@ export async function sendLoginEmail({ name, email, password, role, trackName }:
   `);
   const text = `Hi ${name}, here is your ATIC 2.0 check-in ${isAdmin ? "admin" : "volunteer scanner"} login. Website: ${loginUrl} — Email: ${email} — Password: ${password}. Open it in Chrome or Safari (not inside WhatsApp), sign in before the event and allow camera access. Please don't share this login. — The ATIC Team`;
   return deliver({ to: email, subject, html, text });
+}
+
+interface DayEmailData extends QrEmailData {
+  /** The student's pre-filled track choice form link (lib/track-form.ts). */
+  formUrl: string;
+}
+
+/** Event-day email: choose your tracks (Google Form), your QR code, and the program. */
+export async function sendDayEmail(data: DayEmailData) {
+  const { subject, html, text, qrUrl } = dayEmailTemplate(data);
+  return deliver({
+    to: data.email,
+    subject,
+    html,
+    text,
+    attachments: qrUrl
+      ? undefined
+      : [{ filename: "qr-code.png", content: await qrPngBuffer(data.qrToken), contentType: "image/png", inlineId: "qr-code" }],
+  });
+}
+
+export function dayEmailTemplate({ name, studentId, qrToken, formUrl }: DayEmailData) {
+  const subject = "ATIC 2.0 — choose your tracks + today's program";
+  const base = publicBaseUrl();
+  const qrUrl = base ? `${base}/q/${qrToken}.png` : null;
+  const url = escapeHtml(formUrl);
+
+  const programHtml = program
+    .map(
+      (d) => `
+    <div style="font-family:Courier New,monospace;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#2A2FE0;margin:18px 0 6px">${escapeHtml(d.day)}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+      ${d.items
+        .map(
+          (i) => `<tr${i.tracks ? ` bgcolor="#fff4dc" style="background-color:#fff4dc"` : ""}>
+        <td valign="top" style="padding:6px 10px 6px 6px;border-top:1px solid #d9d6cc;font-family:Courier New,monospace;font-size:12px;white-space:nowrap;color:#5a5a6e">${escapeHtml(i.time)}</td>
+        <td valign="top" style="padding:6px 6px 6px 0;border-top:1px solid #d9d6cc;font-size:14px">${i.tracks ? "<strong>" : ""}${escapeHtml(i.title)}${i.tracks ? "</strong>" : ""}${
+            i.where ? ` <span style="color:#8a8aa6;font-size:12px">· ${escapeHtml(i.where)}</span>` : ""
+          }</td>
+      </tr>`
+        )
+        .join("")}
+    </table>`
+    )
+    .join("");
+
+  const html = layout(`
+    <h2 style="color:#2A2FE0;${H2}">Welcome to ATIC 2.0, ${escapeHtml(name)}!</h2>
+    <p style="margin:0 0 16px">The congress starts today at <strong>${escapeHtml(venue)}</strong>. There are 3 track sessions and 4 tracks running in parallel in each one — pick yours now:</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td align="center" style="padding:4px 0 12px">
+        <a href="${url}" style="display:inline-block;background-color:#2A2FE0;color:#ffffff;font-family:${FONT};font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px">Choose my tracks &rarr;</a>
+      </td></tr>
+    </table>
+    <ul style="margin:0 0 16px;padding-left:20px">
+      <li><strong>Your choice is binding:</strong> at each session you'll only be scanned in at the door of the track you chose.</li>
+      <li>You can change your answer until <strong>30 minutes before</strong> each session starts. After that it's final.</li>
+      <li>Didn't choose? The first track door you're scanned at locks you in for that session.</li>
+    </ul>
+    <p style="margin:0 0 6px"><strong>The tracks:</strong></p>
+    <ul style="margin:0 0 16px;padding-left:20px">${trackRooms.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>
+
+    <p style="margin:20px 0 8px"><strong>Your check-in QR code</strong> — show it at the hotel desk and at every track door:</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td align="center" style="padding:4px 0 8px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:10px;border:1px solid #d9d6cc;border-radius:8px">
+            <img src="${qrUrl ?? "cid:qr-code"}" alt="Your check-in QR code" width="200" height="200"
+                 style="display:block;width:200px;height:200px;border:0" />
+          </td></tr>
+        </table>
+        <div style="font-family:Courier New,monospace;font-size:12px;color:#5a5a6e;margin-top:8px">Student ID: ${escapeHtml(studentId)}</div>
+      </td></tr>
+    </table>
+
+    <p style="margin:20px 0 0"><strong>Program</strong></p>
+    ${programHtml}
+    <p style="margin:24px 0 0">See you there,<br/>The ATIC Team</p>
+  `);
+
+  const programText = program
+    .map((d) => `${d.day}\n${d.items.map((i) => `  ${i.time}  ${i.title}${i.where ? ` (${i.where})` : ""}`).join("\n")}`)
+    .join("\n\n");
+  const text = `Welcome to ATIC 2.0, ${name}!
+
+Choose your track for each of the 3 track sessions: ${formUrl}
+Your choice is binding — you'll only be scanned in at the track you chose. You can change it until 30 minutes before each session; if you don't choose, the first track door you're scanned at locks you in.
+
+Tracks:
+${trackRooms.map((t) => `  - ${t}`).join("\n")}
+
+Show your check-in QR code (Student ID ${studentId}) at the hotel desk and every track door.
+
+${programText}
+
+See you there — The ATIC Team`;
+
+  return { subject, html, text, qrUrl };
 }

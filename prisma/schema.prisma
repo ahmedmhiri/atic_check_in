@@ -32,6 +32,8 @@ model Student {
   resultEmailSentAt DateTime?
   // Set once the student has been emailed their QR code.
   qrEmailSentAt     DateTime?
+  // Set once the event-day email (track choice form + program) is sent.
+  dayEmailSentAt    DateTime?
 
   hotelCheckIn   HotelCheckIn?
   slotSelections SlotSelection[]

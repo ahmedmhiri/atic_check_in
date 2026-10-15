@@ -6,7 +6,7 @@ import { attendedSlotCounts } from "@/lib/attendance";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [totalStudents, hotelCheckedIn, totalSlots, tracks, students, attended] = await Promise.all([
+  const [totalStudents, hotelCheckedIn, totalSlots, tracks, students, attended, slots, choices] = await Promise.all([
     prisma.student.count(),
     prisma.hotelCheckIn.count(),
     prisma.timeSlot.count(),
@@ -25,7 +25,12 @@ export default async function DashboardPage() {
       },
     }),
     attendedSlotCounts(),
+    prisma.timeSlot.findMany({ orderBy: [{ day: "asc" }, { order: "asc" }], select: { id: true, label: true } }),
+    // Track chosen per session: from the Google Form, or locked in by the first scan.
+    prisma.slotSelection.groupBy({ by: ["timeSlotId", "trackId"], _count: { _all: true } }),
   ]);
+  const chosen = (slotId: string, trackId: string) =>
+    choices.find((c) => c.timeSlotId === slotId && c.trackId === trackId)?._count._all ?? 0;
 
   return (
     <div className="space-y-6">
@@ -78,10 +83,46 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {slots.length > 0 && (
+        <div className="card">
+          <h2 className="eyebrow mb-1">(03) Track choices</h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Students locked to each track per session — chosen on the Google Form or by their first scan.
+          </p>
+          <div className="overflow-x-auto rounded-lg border border-white/10">
+            <table className="w-full text-sm">
+              <thead className="bg-navy-900 text-left font-mono text-[11px] uppercase tracking-wider text-mist">
+                <tr>
+                  <th className="px-3 py-2">Session</th>
+                  {tracks.map((t) => (
+                    <th key={t.id} className="px-3 py-2">{t.name}</th>
+                  ))}
+                  <th className="px-3 py-2">Not chosen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {slots.map((sl) => {
+                  const total = tracks.reduce((n, t) => n + chosen(sl.id, t.id), 0);
+                  return (
+                    <tr key={sl.id} className="border-t border-white/5">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-white">{sl.label}</td>
+                      {tracks.map((t) => (
+                        <td key={t.id} className="px-3 py-1.5 font-mono">{chosen(sl.id, t.id)}</td>
+                      ))}
+                      <td className="px-3 py-1.5 font-mono text-slate-500">{Math.max(totalStudents - total, 0)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <FinalizeButton />
 
       <div className="card">
-        <h2 className="eyebrow mb-3">(03) Students</h2>
+        <h2 className="eyebrow mb-3">(04) Students</h2>
         <div className="max-h-[28rem] overflow-auto rounded-lg border border-white/10">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-navy-900 text-left font-mono text-[11px] uppercase tracking-wider text-mist">

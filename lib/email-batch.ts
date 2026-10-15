@@ -11,7 +11,7 @@ const TIME_BUDGET_MS = 40_000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Student column that records "this email was sent" (also used as a claim while sending). */
-export type SentField = "resultEmailSentAt" | "qrEmailSentAt";
+export type SentField = "resultEmailSentAt" | "qrEmailSentAt" | "dayEmailSentAt";
 
 export interface BatchStudent {
   id: string;
