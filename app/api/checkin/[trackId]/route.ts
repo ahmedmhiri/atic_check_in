@@ -69,21 +69,11 @@ export async function POST(
     );
   }
 
-  // Look up student and opening ceremony check-in status.
-  const student = await prisma.student.findUnique({
-    where: { qrToken },
-    include: { hotelCheckIn: true },
-  });
+  // No opening ceremony gate: a student who skipped the opening can still
+  // attend the workshops.
+  const student = await prisma.student.findUnique({ where: { qrToken } });
   if (!student) {
     return NextResponse.json({ status: "error", message: "Invalid QR — student not found" }, { status: 404 });
-  }
-
-  // Stage 1 gate: must have checked in at the opening ceremony first.
-  if (!student.hotelCheckIn) {
-    return NextResponse.json(
-      { status: "rejected", message: `${student.name} has not checked in at the opening ceremony yet` },
-      { status: 409 }
-    );
   }
 
   // Determine LATE vs PRESENT.

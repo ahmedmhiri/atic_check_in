@@ -27,7 +27,7 @@ Open http://localhost:3000 → sign in with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PAS
 1. **Import** (`/import`): upload `.xlsx`/`.csv` (columns `name`, `email`, `studentId`). QR tokens auto-generated; duplicates skipped. Download all QR codes as a ZIP, and/or **Email QR Codes** — each student gets their QR inline + as a PNG attachment (`POST /api/qr-email`, batched like Finalize; `Student.qrEmailSentAt` means re-running only emails newly imported students). A single student's QR can be (re)sent from their detail page.
 2. **Opening ceremony scan** (`/scan/hotel`): scan a badge → idempotent opening ceremony check-in, live counter.
 3. **Workshop scan** (`/scan/[trackId]`): pick the active time slot, then scan.
-   - Requires opening ceremony check-in first.
+   - No opening ceremony check-in needed: students who skipped the opening can still attend.
    - First scan in a slot locks the student to that track *for that slot only* and sets `currentTrackId`.
    - Re-scan same session → "already scanned". Scan at a different track same slot → rejected.
    - **Start New Time Slot** button resets every `currentTrackId` to null (students free to re-choose).
